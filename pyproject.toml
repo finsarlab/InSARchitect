@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "insarchitect"
+version = "0.0.0"
+
+[project.scripts]
+insarchitect = "insarchitect.cli.main:app"
+
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
