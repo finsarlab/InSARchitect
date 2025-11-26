@@ -3,12 +3,14 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from .utils import parse_date
+
 @dataclass
 class DownloadConfig:
     platform: str
     relative_orbit: int
-    start_date: int
-    end_date: int
+    start_date: str
+    end_date: str
     max_results: int
     bounding_box: str
     parallel_downloads: int
@@ -17,6 +19,8 @@ class DownloadConfig:
 
     def __post_init__(self):
             self.slc_dir = Path(self.slc_dir)
+            self.start_date = parse_date.parse_date_from_int(self.start_date)
+            self.end_date = parse_date.parse_date_from_int(self.end_date)
 
 @dataclass
 class Config:
