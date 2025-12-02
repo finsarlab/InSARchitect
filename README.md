@@ -21,9 +21,6 @@ Then, activate a shell in the environment
 pixi shell
 ```
 
-Add the environment variables to your `.bashrc`, do not forget to set all variables
-to your own values.
-
 To check the installation integrity, run the pixi test
 
 ```bash
@@ -34,4 +31,10 @@ Run the program
 
 ```bash
 pixi run insarchitect <command> <template.toml>
+```
+
+Example
+
+```bash
+pixi run insarchitect download template.example.toml
 ```
