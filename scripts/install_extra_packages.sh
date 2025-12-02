@@ -13,7 +13,6 @@ TOOLS_DIR="${PROJECT_ROOT}/tools"
 mkdir -p "${TOOLS_DIR}"
 
 echo -e "${GREEN}Installing additional InSAR packages...${NC}"
-echo ""
 
 # clone repository if it doesn't exist
 clone_if_missing() {
@@ -37,12 +36,11 @@ echo -e "${GREEN}Cloning repositories...${NC}"
 clone_if_missing "git@github.com:finsarlab/MintPy.git" "MintPy"
 clone_if_missing "git@github.com:finsarlab/MiaplPy.git" "MiaplPy"
 clone_if_missing "git@github.com:finsarlab/isce2.git" "isce2"
+clone_if_missing "git@github.com:finsarlab/insarmaps-scripts.git" "insarmaps-scripts"
 
 # uncomment if needed in the future
-# clone_if_missing "https://github.com/geodesymiami/insarmaps_scripts.git" "insarmaps_scripts"
 # clone_if_missing "https://gitlab.com/earthscope/public/sar/ssara_client.git" "ssara_client"
 
-echo ""
 echo -e "${GREEN}Installing packages with pip...${NC}"
 
 # MintPy
@@ -63,13 +61,15 @@ fi
 
 # ISCE2
 if [ -d "${TOOLS_DIR}/isce2" ]; then
-    echo -e "${YELLOW}ISCE2 repository cloned.${NC}"
+    echo -e "${GREEN}ISCE2 repository cloned.${NC}"
 fi
 
-echo ""
+# insarmaps-scripts
+if [ -d "${TOOLS_DIR}/insarmaps-scripts" ]; then
+    echo -e "${GREEN}insarmaps-scripts repository cloned.${NC}"
+fi
+
 echo -e "${GREEN}Additional packages installation completed!${NC}"
-echo ""
 echo -e "${YELLOW}Note: Environment variables can be set using:${NC}"
 echo -e "${YELLOW}  source scripts/setup_env.sh${NC}"
-echo ""
 

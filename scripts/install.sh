@@ -12,7 +12,6 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}InSARchitect Installation Script${NC}"
 echo -e "${GREEN}========================================${NC}"
-echo ""
 
 # verify if pixi is installed
 if ! command -v pixi &> /dev/null; then
@@ -39,27 +38,20 @@ fi
 
 cd "${PROJECT_ROOT}"
 
-echo ""
 echo -e "${GREEN}Creating pixi environment...${NC}"
 pixi install
 
-echo ""
 echo -e "${GREEN}Installing InSARchitect package in editable mode...${NC}"
 pixi run install
 
-echo ""
 echo -e "${GREEN}Installing additional InSAR packages (ISCE2, MintPy, MiaplPy)...${NC}"
 pixi run install-extra
 
-echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Installation completed successfully!${NC}"
 echo -e "${GREEN}========================================${NC}"
-echo ""
 echo "To activate the environment, run:"
 echo -e "  ${YELLOW}pixi shell${NC}"
-echo ""
 echo "Or run commands directly with:"
 echo -e "  ${YELLOW}pixi run insarchitect${NC}"
-echo ""
 
