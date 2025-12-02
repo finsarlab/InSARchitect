@@ -1,0 +1,10 @@
+[download]
+platform                = "SENTINEL-1"
+relative_orbit          = 128
+start_date              = 20160830
+end_date                = 20161031
+max_results             = 2000
+bounding_box            = "POLYGON((-99.20 19.25, -99.10 19.25, -99.10 19.35, -99.20 19.35, -99.20 19.25))"
+parallel_downloads      = 100
+burst_download          = true
+slc_dir                 = "./SLC"
