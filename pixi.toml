@@ -1,0 +1,55 @@
+[workspace]
+name = "insarchitect"
+version = "0.0.0"
+description = "InSAR orchestrator integrating ISCE2, MiaplPy, and MintPy"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = ">=3.10,<3.12"
+
+numpy = "*"
+scipy = "*"
+matplotlib = "*"
+pandas = "*"
+xarray = "*"
+netcdf4 = "*"
+h5py = "*"
+
+gdal = "*"
+proj = "*"
+geos = "*"
+
+pyproj = "*"
+rasterio = "*"
+shapely = "*"
+fiona = "*"
+geopandas = "*"
+
+typer = ">=0.20.0,<0.21"
+click = "*"
+pyyaml = "*"
+requests = "*"
+tqdm = "*"
+pytest = "*"
+
+cmake = "*"
+gfortran_linux-64 = "*"
+asf_search = ">=10.2.0,<11"
+
+[pypi-dependencies]
+pip = "*"
+setuptools = "*"
+wheel = "*"
+
+
+[tasks]
+install = { cmd = ["python", "-m", "pip", "install", "-e", "."] }
+
+install-extra = { cmd = ["bash", "-c", "bash scripts/install_extra_packages.sh"], depends-on = ["install"] }
+
+run = { cmd = ["python", "-m", "insarchitect.cli.main"] }
+
+setup-env = { cmd = ["bash", "-c", "source env.sh || true"] }
+
+test = { cmd = ["pytest", "test/", "-v"] }

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+if [ -f "${PROJECT_ROOT}/env.sh" ]; then
+    source "${PROJECT_ROOT}/env.sh" > /dev/null 2>&1
+fi
+
+exec pixi run --manifest-path "${PROJECT_ROOT}/pixi.toml" insarchitect "$@"
+
