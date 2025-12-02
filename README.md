@@ -29,3 +29,9 @@ To check the installation integrity, run the pixi test
 ```bash
 pixi run test
 ```
+
+Run the program
+
+```bash
+pixi run insarchitect <command> <template.toml>
+```
