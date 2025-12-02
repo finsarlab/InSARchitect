@@ -15,3 +15,17 @@ This will install `pixi`, download the required packages, and clone and install
 repositories such as `ISCE2`, `MintPy`, and `MiaplPy`.
 
 Be sure you have the correct access permissions for these private repositories.
+
+Then, activate a shell in the environment
+```bash
+pixi shell
+```
+
+Add the environment variables to your `.bashrc`, do not forget to set all variables
+to your own values.
+
+To check the installation integrity, run the pixi test
+
+```bash
+pixi run test
+```
