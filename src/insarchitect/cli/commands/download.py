@@ -1,11 +1,12 @@
 from pathlib import Path
+import os
 
 from typing import Annotated
 import typer
 
 from shapely.geometry import box
 import asf_search as asf
-from asf_search.exceptions import ASFSearchError
+from asf_search.exceptions import ASFSearchError, ASFAuthenticationError
 
 from insarchitect.config import load_config
 from insarchitect.utils import parse_date
@@ -40,6 +41,9 @@ def download(
     burst_flag = download_config.burst_download
     product_type = asf.PRODUCT_TYPE.BURST if burst_flag else asf.PRODUCT_TYPE.SLC
 
+    slc_dir = download_config.slc_dir
+    slc_dir.mkdir(parents=True, exist_ok=True)
+
     # Options for the search
     opts = {
         'platform': PLATFORM_MAP.get(download_config.platform),
@@ -60,11 +64,19 @@ def download(
         print(f"Results from ASF search incomplete: {e}")
         raise typer.Exit(code=1)
 
-    results.download(
-        path=download_config.slc_dir,
-        session=session, 
-        processes=download_config.parallel_downloads
-    )
-
-
-
+    try:
+        results.download(
+            path=download_config.slc_dir,
+            session=session, 
+            processes=download_config.parallel_downloads
+        )
+    except ASFAuthenticationError as e:
+        print(f"Error!: {e}")
+        print("""
+        Place your credentials inside ~/.netrc like this:
+        machine urs.earthdata.nasa.gov
+            login user_name
+            password your_password
+              """)
+        # Using os._exit to avoid mp error message from download
+        os._exit(1)
