@@ -36,6 +36,7 @@ pytest = "*"
 cmake = "*"
 gfortran_linux-64 = "*"
 asf_search = ">=10.2.0,<11"
+sardem = ">=0.12.0,<0.13"
 
 [pypi-dependencies]
 pip = "*"

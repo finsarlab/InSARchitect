@@ -14,3 +14,6 @@ dist/
 *.dll
 
 temp/
+
+SLC
+DEM
