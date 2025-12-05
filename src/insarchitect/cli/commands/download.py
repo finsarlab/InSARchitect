@@ -1,4 +1,7 @@
 from pathlib import Path
+import simplekml
+import json
+from shapely.geometry import shape
 import os
 
 from typing import Annotated
@@ -11,7 +14,7 @@ from asf_search.exceptions import ASFSearchError, ASFAuthenticationError
 from insarchitect.config import load_config
 from insarchitect.utils import parse_date
 
-asf.REPORT_ERRORS = True
+asf.REPORT_ERRORS = False
 
 app = typer.Typer(help="ASF SLC and Burst downloads")
 session = asf.ASFSession()
@@ -40,6 +43,7 @@ def download(
     # Set product type
     burst_flag = download_config.burst_download
     product_type = asf.PRODUCT_TYPE.BURST if burst_flag else asf.PRODUCT_TYPE.SLC
+    product_type = asf.PRODUCT_TYPE.DEM
 
     slc_dir = download_config.slc_dir
     slc_dir.mkdir(parents=True, exist_ok=True)
@@ -63,6 +67,24 @@ def download(
     except ASFSearchError as e:
         print(f"Results from ASF search incomplete: {e}")
         raise typer.Exit(code=1)
+
+    # Generate KML
+    kml = simplekml.Kml()
+
+    for product in results:
+        geom_json = product.geometry  # GeoJSON geometry
+        geom = shape(geom_json)
+
+        if geom.geom_type == "Polygon":
+            coords = [(x, y) for x, y in list(geom.exterior.coords)]
+            kml.newpolygon(name=product.properties['fileID'], outerboundaryis=coords)
+
+        elif geom.geom_type == "MultiPolygon":
+            for polygon in geom:
+                coords = [(x, y) for x, y in list(polygon.exterior.coords)]
+                kml.newpolygon(name=product.properties['fileID'], outerboundaryis=coords)
+
+    kml.save("asf_results.kml")
 
     try:
         results.download(
