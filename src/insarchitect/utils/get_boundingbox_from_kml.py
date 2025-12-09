@@ -9,15 +9,15 @@ import numpy as np
 import xml.etree.ElementTree as ET
 
 EXAMPLE = """Example:
-   get_boundingbox_from_kml.py ssara_search_20211019042049.kml —-delta_lat 0.5 —-delta_lon 1.2
+   get_boundingbox_from_kml.py *_20211019042049.kml —-delta_lat 0.5 —-delta_lon 1.2
 """
 
 def create_parser():
-    parser = argparse.ArgumentParser(description='Get bounding box coordinates from SSARA kml file',
+    parser = argparse.ArgumentParser(description='Get bounding box coordinates from kml file',
                                      formatter_class=argparse.RawTextHelpFormatter,
                                      epilog=EXAMPLE)
 
-    parser.add_argument('file', nargs=1, type=str, help='ssara_search_kml file\n')
+    parser.add_argument('file', nargs=1, type=str, help='kml file\n')
     parser.add_argument('--delta_lat', type=float, nargs=1, help='Delta latitude to subtract/add from minimum/maximimum latitude', default=[0.0])
     parser.add_argument('--delta_lon', nargs=1, type=float, help='Delta longitude to subtract/add from minimum/maximimum longitude', default=[0.0])
 

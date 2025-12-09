@@ -26,13 +26,14 @@ class DownloadConfig:
 class DEMConfig:
     """Configuration for DEM download and processing."""
     work_dir: str | Path
-    data_source: str = "COP" 
+    data_source: str
     
     def __post_init__(self):
         self.work_dir = Path(self.work_dir)
+        self.data_source = str(self.data_source)
         
         # Validate data source
-        valid_sources = ["COP", "SRTM"]
+        valid_sources = ["COP", "NASA"]
         if self.data_source.upper() not in valid_sources:
             print(f"Warning: data_source '{self.data_source}' not in {valid_sources}. Using 'COP'")
             self.data_source = "COP"

@@ -5,6 +5,7 @@ import math
 import shutil
 from typing import Annotated
 import typer
+from rich import print
 
 import sardem.dem
 from insarchitect.config import load_config
@@ -52,10 +53,10 @@ def exist_valid_dem_dir(dem_dir: Path) -> bool:
     if dem_dir.is_dir():
         products = list(dem_dir.glob('*dem.wgs84*'))
         if len(products) >= 3:
-            print('DEM products already exist. If not satisfying, remove the folder and run again')
+            print('[bold yellow]\nDEM products already exist. If not satisfying, remove the folder and run again[/bold yellow]')
             return True
         else:
-            print('Incomplete DEM directory found. Removing and recreating...')
+            print('[bold yellow]\nIncomplete DEM directory found. Removing and recreating...[/bold yellow]')
             shutil.rmtree(dem_dir)
             return False
     else:
@@ -84,11 +85,11 @@ def download_dem(
     1. Reads the configuration from the template file
     2. Locates the SSARA KML file with bounding box information
     3. Extracts the bounding box coordinates
-    4. Downloads the DEM using sardem from Copernicus DEM
+    4. Downloads the DEM using sardem from Copernicus or NASA DEM
     5. Creates ISCE-compatible XML files
     
     Example:
-        pixi run insarchitect download-dem config.template
+        pixi run insarchitect download-dem <template>
     """
     
     # Get config
@@ -98,16 +99,20 @@ def download_dem(
     # Set directories
     work_dir = dem_download_config.work_dir
     dem_dir = work_dir / 'DEM'
+    #slc_dir = Path('./')
     slc_dir = asf_download_config.slc_dir
+    data_source = dem_download_config.data_source
     
-    print("DEM DOWNLOAD")
-    print(f"Work directory: {work_dir}")
-    print(f"DEM directory:  {dem_dir}")
-    print(f"SLC directory:  {slc_dir}")
+    print(f"[bold green]{'='*60}[/bold green]")
+    print("[bold green]DEM DOWNLOAD[/bold green]")
+    print(f"[bold green]{'='*60}[/bold green]")
+    print(f"[bold]Work directory[/bold]: {work_dir}")
+    print(f"[bold]DEM directory[/bold]:  {dem_dir}")
+    print(f"[bold]SLC directory[/bold]:  {slc_dir}")
     
     # Check for existing valid DEM
     if exist_valid_dem_dir(dem_dir):
-        print("\nValid DEM already exists. Exiting.")
+        print("\n[bold cyan]Valid DEM already exists. Exiting.[/bold cyan]")
         raise typer.Exit()
     
     # Create DEM directory
@@ -123,35 +128,31 @@ def download_dem(
         print(f"Platform detected: TerraSAR-X, using SLC_ORIG directory")
     
     # Find KML file
-    print('Searching for KML file...')
+    print('[bold magenta]\nSearching for KML file...\n[/bold magenta]')
     try:
-        kml_files = sorted(slc_dir.glob('ssara_search_*.kml'))
+        kml_files = sorted(slc_dir.glob('*.kml'))
         if not kml_files:
             raise FileNotFoundError(
-                f'No ssara_search_*.kml found in {slc_dir}\n'
-                'Please run the download command first to generate the KML file.'
+                f'[bold red]No ssara_search_*.kml found in {slc_dir}\n'
+                'Please run the download command first to generate the KML file.[/bold red]'
             )
         ssara_kml_file = kml_files[-1]
     except Exception as e:
-        print(f"Error finding KML file: {e}")
+        print(f'[bold red]Error finding KML file: {e}[/bold red]')
         raise typer.Exit(code=1)
     
-    print(f'Using KML file: {ssara_kml_file.name}')
+    print(f'[bold]Using KML file[/bold]: {ssara_kml_file.name}')
     
     # Get bounding box from KML
-    print(f"\n{'='*60}")
-    print('Extracting bounding box from KML...')
+    print('[bold magenta]\nExtracting bounding box from KML...\n[/bold magenta]')
     try:
-        bbox = get_boundingbox_from_kml.main( [ssara_kml_file, '--delta_lon', '0'] )
-        print(f'Raw bbox: {bbox}')
-        
+        bbox = get_boundingbox_from_kml.main( [str(ssara_kml_file), '--delta_lon', '0'] )    
     except Exception as e:
-        print(f'Problem with KML file: {e}')
+        print(f'[bold red]Problem with KML file: {e}[/bold red]')
         raise typer.Exit(code=1)
     
     # Parse bbox string
     bbox = bbox.split('SNWE:')[1]
-    print(f'bbox: {bbox}')
     bbox = [val for val in bbox.split()]
 
     south = bbox[0]
@@ -165,24 +166,22 @@ def download_dem(
     west = math.floor(float(west) - 0.5)
     east = math.ceil(float(east) + 0.5)
     
-    print(f'Buffered bbox: S={south}, N={north}, W={west}, E={east}')
-    
     # Format bbox for sardem (Left, Bottom, Right, Top)
     bbox_LeftBottomRightTop = [int(west), int(south), int(east), int(north)]
     output_name = f"elevation_{format_bbox(bbox_LeftBottomRightTop)}.dem"
-    
-    print(f"\n{'='*60}")
-    print('Downloading DEM...')
-    print(f"Output file: {output_name}")
-    print(f"Data source: Copernicus DEM")
-    print(f"Bounding box: {bbox_LeftBottomRightTop}")
+    data_source_str = "NASA DEM" if data_source == "NASA" else "Copernicus DEM"
+
+    print('[bold magenta]\nDownloading DEM...\n[/bold magenta]')
+    print(f"[bold]Output file[/bold]: {output_name}")
+    print(f"[bold]Data source[/bold]: {data_source_str}")
+    print(f"[bold]Bounding box[/bold]: {bbox_LeftBottomRightTop}")
     
     command = (
         f"sardem --bbox {int(west)} {int(south)} {int(east)} {int(north)} "
-        f"--data COP --make-isce-xml --output {output_name}"
+        f"--data {data_source} --make-isce-xml --output {output_name}"
     )
-    print(f"Command: {command}")
-    
+    print(f"[bold magenta]\nSARDEM execution...\n[/bold magenta]")
+    print(f'[bold]Command[/bold]: {command}')
     # Change to DEM directory
     original_dir = Path.cwd()
     os.chdir(dem_dir)
@@ -190,24 +189,25 @@ def download_dem(
     try:
         sardem.dem.main(
             bbox=bbox_LeftBottomRightTop,
-            data_source="COP",
+            data_source=data_source,
             make_isce_xml=True,
             output_name=output_name
         )
-        print('DEM download completed successfully')
-        
         # Verify output files
         dem_files = list(Path('.').glob(f'{output_name}*'))
         if dem_files:
-            print("Created files:")
+            print("[bold]\nCreated files[/bold]:")
             for f in sorted(dem_files):
-                print(f"  - {f.name}")
+                print(f"  - [bold cyan]{f.name}[/bold cyan]")
+        print(f"[bold green]{'='*60}[/bold green]")
+        print('[bold green]DEM DOWNLOAD COMPLETED SUCESSFULLY[/bold green]')
+        print(f"[bold green]{'='*60}[/bold green]")
         
     except KeyboardInterrupt:
-        print("\nDownload interrupted by user")
+        print("[bold red]\nDownload interrupted by user[/bold red]")
         raise typer.Exit(code=1)
     except Exception as e:
-        print(f"\nERROR during DEM download: {e}")
+        print(f"[bold red]\nERROR during DEM download: {e}[/bold red]")
         raise typer.Exit(code=1)
     finally:
         os.chdir(original_dir)
