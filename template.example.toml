@@ -8,3 +8,8 @@ bounding_box            = "POLYGON((-99.20 19.25, -99.10 19.25, -99.10 19.35, -9
 parallel_downloads      = 100
 burst_download          = true
 slc_dir                 = "./SLC"
+
+[dem]
+work_dir                = "./"
+data_source             = "NASA"
+

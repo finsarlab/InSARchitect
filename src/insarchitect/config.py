@@ -23,8 +23,27 @@ class DownloadConfig:
             self.end_date = parse_date.parse_date_from_int(self.end_date)
 
 @dataclass
+class DEMConfig:
+    """Configuration for DEM download and processing."""
+    work_dir: str | Path
+    data_source: str
+    
+    def __post_init__(self):
+        self.work_dir = Path(self.work_dir)
+        self.data_source = str(self.data_source)
+        
+        # Validate data source
+        valid_sources = ["COP", "NASA"]
+        if self.data_source.upper() not in valid_sources:
+            print(f"Warning: data_source '{self.data_source}' not in {valid_sources}. Using 'COP'")
+            self.data_source = "COP"
+        else:
+            self.data_source = self.data_source.upper()
+
+@dataclass
 class Config:
     download: DownloadConfig
+    dem: DEMConfig
 
 def load_config(path: Path) -> Config:
     """Load config file
@@ -43,6 +62,7 @@ def load_config(path: Path) -> Config:
         with path.open("rb") as f:
             data = tomllib.load(f)
         download_config = DownloadConfig(**data['download'])
+        dem_config = DEMConfig(**data['dem'])
     except FileNotFoundError as e:
         print(f"Error: {e}")
         sys.exit(1)
@@ -51,7 +71,8 @@ def load_config(path: Path) -> Config:
         sys.exit(1)
 
     config = Config(
-        download_config
+        download_config,
+        dem_config
     )
 
     return config
