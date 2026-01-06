@@ -43,7 +43,6 @@ def download(
     # Set product type
     burst_flag = download_config.burst_download
     product_type = asf.PRODUCT_TYPE.BURST if burst_flag else asf.PRODUCT_TYPE.SLC
-    product_type = asf.PRODUCT_TYPE.DEM
 
     slc_dir = download_config.slc_dir
     slc_dir.mkdir(parents=True, exist_ok=True)
@@ -68,21 +67,15 @@ def download(
         print(f"Results from ASF search incomplete: {e}")
         raise typer.Exit(code=1)
 
-    # Generate KML
     kml = simplekml.Kml()
 
     for product in results:
-        geom_json = product.geometry  # GeoJSON geometry
+        geom_json = product.geometry
         geom = shape(geom_json)
 
-        if geom.geom_type == "Polygon":
-            coords = [(x, y) for x, y in list(geom.exterior.coords)]
-            kml.newpolygon(name=product.properties['fileID'], outerboundaryis=coords)
-
-        elif geom.geom_type == "MultiPolygon":
-            for polygon in geom:
-                coords = [(x, y) for x, y in list(polygon.exterior.coords)]
-                kml.newpolygon(name=product.properties['fileID'], outerboundaryis=coords)
+        coords = [(x, y) for x, y in list(geom.exterior.coords)]
+        polygon = kml.newpolygon(name=product.properties['fileID'], outerboundaryis=coords)
+        polygon.description = "Legacy"
 
     kml.save("asf_results.kml")
 
