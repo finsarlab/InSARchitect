@@ -2,11 +2,13 @@ import tomllib
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from rich import print
 
 from .utils import parse_date
 
 @dataclass
-class DownloadConfig:
+class DownloadSLCConfig:
+    """Configuration for SLC download."""
     platform: str
     relative_orbit: int
     start_date: str
@@ -23,7 +25,7 @@ class DownloadConfig:
             self.end_date = parse_date.parse_date_from_int(self.end_date)
 
 @dataclass
-class DEMConfig:
+class DownloadDEMConfig:
     """Configuration for DEM download and processing."""
     work_dir: str | Path
     data_source: str
@@ -41,11 +43,14 @@ class DEMConfig:
             self.data_source = self.data_source.upper()
 
 @dataclass
-class Config:
-    download: DownloadConfig
-    dem: DEMConfig
+class SLCConfig:
+    download: DownloadSLCConfig
 
-def load_config(path: Path) -> Config:
+@dataclass
+class DEMConfig:
+    dem: DownloadDEMConfig
+
+def load_config(path: Path) -> SLCConfig:
     """Load config file
     
     Parameters
@@ -55,14 +60,13 @@ def load_config(path: Path) -> Config:
 
     Returns
     -------
-    Config
-        An Config object containing every parameter
+    SLCConfig
+        A SLCConfig object containing parameters for SLC downloads
     """
     try:
         with path.open("rb") as f:
             data = tomllib.load(f)
-        download_config = DownloadConfig(**data['download'])
-        dem_config = DEMConfig(**data['dem'])
+        download_config = DownloadSLCConfig(**data['download'])
     except FileNotFoundError as e:
         print(f"Error: {e}")
         sys.exit(1)
@@ -70,10 +74,48 @@ def load_config(path: Path) -> Config:
         print(f"Argument not supported: {e}")
         sys.exit(1)
 
-    config = Config(
-        download_config,
-        dem_config
+    config = SLCConfig(
+        download_config
     )
 
     return config
 
+
+def load_dem_config(path: Path) -> DEMConfig:
+    """Load dem parameters
+    
+    Parameters
+    ----------
+    path: Path
+        Path to config file
+
+    Returns
+    -------
+    DEMConfig
+        A DEMConfig object containing parameters for DEM downloads
+    """
+    try:
+        with path.open("rb") as f:
+            data = tomllib.load(f)
+        
+        if 'dem' not in data:
+            print('[bold yellow]Template file does not have dem key definition. Using default values.[/bold yellow]')
+            dem_config = DownloadDEMConfig(
+                work_dir="./", 
+                data_source="COP"
+            )
+        else:
+            dem_config = DownloadDEMConfig(**data['dem'])
+            
+    except FileNotFoundError as e:
+        print(f"[bold red]Error finding config file: {e}[/bold red]")
+        sys.exit(1)
+    except TypeError as e:
+        print(f"[bold red]Error managing the argument: {e}[/bold red]")
+        sys.exit(1)
+
+    config = DEMConfig(
+        dem_config
+    )
+
+    return config

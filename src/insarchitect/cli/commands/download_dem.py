@@ -8,7 +8,7 @@ import typer
 from rich import print
 
 import sardem.dem
-from insarchitect.config import load_config
+from insarchitect.config import load_config, load_dem_config
 import insarchitect.utils.get_boundingbox_from_kml as get_boundingbox_from_kml
 
 app = typer.Typer(help="Creates a DEM based on ssara_*.kml file using COPERNICUS or NASA")
@@ -93,15 +93,16 @@ def download_dem(
     """
     
     # Get config
-    dem_download_config = load_config(config).dem
+    
+    dem_download_config = load_dem_config(config).dem    
     asf_download_config = load_config(config).download
     
     # Set directories
     work_dir = dem_download_config.work_dir
+    data_source = dem_download_config.data_source
     dem_dir = work_dir / 'DEM'
     #slc_dir = Path('./')
     slc_dir = asf_download_config.slc_dir
-    data_source = dem_download_config.data_source
     
     print(f"[bold green]{'='*60}[/bold green]")
     print("[bold green]DEM DOWNLOAD[/bold green]")
@@ -133,7 +134,7 @@ def download_dem(
         kml_files = sorted(slc_dir.glob('*.kml'))
         if not kml_files:
             raise FileNotFoundError(
-                f'[bold red]No ssara_search_*.kml found in {slc_dir}\n'
+                f'[bold red]No *.kml found in {slc_dir}\n'
                 'Please run the download command first to generate the KML file.[/bold red]'
             )
         ssara_kml_file = kml_files[-1]
