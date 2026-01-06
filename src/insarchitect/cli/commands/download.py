@@ -77,7 +77,7 @@ def download(
         polygon = kml.newpolygon(name=product.properties['fileID'], outerboundaryis=coords)
         polygon.description = "Legacy"
 
-    kml.save("asf_results.kml")
+    kml.save(download_config.slc_dir / "ssara_search_1.kml")
 
     try:
         results.download(
