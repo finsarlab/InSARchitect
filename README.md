@@ -16,25 +16,25 @@ repositories such as `ISCE2`, `MintPy`, and `MiaplPy`.
 
 Be sure you have the correct access permissions for these private repositories.
 
-Then, activate a shell in the environment
+After the installation process, open a new bash session
+
 ```bash
-pixi shell
+bash
 ```
 
-To check the installation integrity, run the pixi test
-
+Then, activate the environment
 ```bash
-pixi run test
+insarchitect.load
 ```
 
 Run the program
 
 ```bash
-pixi run insarchitect <command> <template.toml>
+insarchitect <command> <template.toml>
 ```
 
 Example
 
 ```bash
-pixi run insarchitect download template.example.toml
+insarchitect download templates/galapagos.toml
 ```
