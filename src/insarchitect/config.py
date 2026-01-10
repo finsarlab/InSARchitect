@@ -70,8 +70,8 @@ def load_config(config_path: Path) -> ProjectConfig:
                 print(f"Error in {section}: {field} -> {error['msg']}")
         sys.exit(1)
 
-
-def get_config_section(config_path: Path, section: str):
-    """Load specific section from config."""
-    config = load_config(config_path)
-    return getattr(config, section)
+#
+# def get_config_section(config_path: Path, section: str):
+#     """Load specific section from config."""
+#     config = load_config(config_path)
+#     return getattr(config, section)
