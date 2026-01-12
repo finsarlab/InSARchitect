@@ -43,4 +43,5 @@ class ProjectConfig(BaseModel):
     dem: Optional[DemConfig] = Field(None, description="DEM configuration section")
     jobfiles: Optional[JobfilesConfig] = Field(None, description="Jobfiles configuration section")
     system: SystemConfig = Field(..., description="System configuration")
+    project_name: str = Field(..., description="Name of the project (Same as template)")
 
