@@ -51,6 +51,7 @@ def load_config(config_path: Path) -> ProjectConfig:
 
         system_config = load_system_config()
         data["system"] = system_config
+        data["project_name"] = config_path.stem
 
         return ProjectConfig(**data)
 
