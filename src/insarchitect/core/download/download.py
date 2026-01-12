@@ -12,16 +12,18 @@ from ...models import ProjectConfig
 def download_main(config: ProjectConfig):
     """Download SLC images and a KML file based on config"""
     download_config = config.download
-    work_dir = config.system.work_dir
     if download_config is None:
         print(f"[Bold red]No valid configuration given for download command[/bold red]")
         sys.exit(1)
+
+    work_dir = config.system.work_dir / config.project_name
 
     burst_flag = download_config.burst_download
     product_type = "BURST" if burst_flag else "SLC"
 
     slc_dir = work_dir / download_config.slc_dir
-    slc_dir.mkdir(exist_ok=True)
+    slc_dir.mkdir(exist_ok=True, parents=True)
+
 
     print(f"[bold green]{'='*60}[/bold green]")
     print("[bold green]ASF DOWNLOAD[/bold green]")
