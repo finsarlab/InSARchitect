@@ -1,13 +1,23 @@
+import os
 import sys
 import datetime
+import warnings
 from functools import reduce
+from pathlib import Path
+import time
+from concurrent.futures import ThreadPoolExecutor
 
+from asf_search.exceptions import ASFAuthenticationError
 from rich import print
+from rich.progress import Progress, BarColumn, TextColumn, DownloadColumn, TransferSpeedColumn
 from shapely.geometry import Polygon, shape
 import asf_search as asf
 import simplekml
 
 from ...models import ProjectConfig
+
+warnings.filterwarnings('ignore', message='File already exists, skipping download:*')
+
 
 def download_main(config: ProjectConfig):
     """Download SLC images and a KML file based on config"""
@@ -60,10 +70,71 @@ def download_main(config: ProjectConfig):
 
     # Get total bytes for loading bar
     total_bytes = reduce(lambda x, y: x + y.properties["bytes"], results, 0)
-    total_gigabytes = round(total_bytes / 1024 / 1024 / 1024, 2)
-
+    total_gigabytes = round(total_bytes / (1024**3), 2)
     print(f"[bold cyan]\nFound {len(results)} products for a total of {total_gigabytes}GB[/bold cyan]")
+
+    create_kml(slc_dir, results)
+
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        DownloadColumn(),
+        TransferSpeedColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+    ) as progress:
+        task = progress.add_task("Downloading", total=total_bytes)
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                lambda: results.download(
+                    path=str(slc_dir.resolve()),
+                    processes=download_config.parallel_downloads
+                )
+            )
+
+            last_downloaded = 0
+            last_time = time.time()
+
+            while not future.done():
+                downloaded_bytes = sum(file.stat().st_size for file in slc_dir.glob("*.zip"))
+                progress.update(task, completed=downloaded_bytes)
+                last_downloaded = downloaded_bytes
+                last_time = time.time()
+                time.sleep(0.5)
+
+        try:
+            future.result()
+        except ASFAuthenticationError as e:
+            print(f"[bold red]ERROR: Authentication failed[/bold red]")
+            print(f"[bold red]{e}[/bold red]")
+            print("""
+[bold yellow]Configure your NASA Earthdata credentials:[/bold yellow]
+Place your credentials in ~/.netrc:
+
+[bold]machine urs.earthdata.nasa.gov
+    login your_username
+    password your_password[/bold]
+                """)
+            # Using os._exit to avoid mp error message from download
+            os._exit(1)
+
+        except KeyboardInterrupt:
+            print("\n[bold red]Download interrupted by user[/bold red]")
+            sys.exit(1)
+
+        except:
+            progress.stop()
+            print("[bold red]Connection lost during download[/bold red]")
+            sys.exit(1)
+
+
+
+
+def create_kml(slc_dir: Path, results):
     print(f"[bold]Creating KML file...[/bold]")
+    # Delete old kml(s)
+    for file in slc_dir.glob("*.kml"):
+        file.unlink(missing_ok=True)
 
     # Create kml
     kml = simplekml.Kml()
@@ -80,11 +151,6 @@ def download_main(config: ProjectConfig):
     kml.save(slc_dir / f"ssara_search_{datetime.datetime.now().strftime('%Y%m%d')}.kml")
     print(f"[bold cyan]✓ KML saved:[/bold cyan] ssara_search_1.kml")
 
-
-
-
-# def get_bytes(result):
-#     return result.properties["bytes"]
 
 
 
