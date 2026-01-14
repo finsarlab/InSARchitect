@@ -93,7 +93,6 @@ def download_dem(
     """
     
     # Get config
-    
     dem_download_config = load_dem_config(config).dem    
     asf_download_config = load_config(config).download
     
@@ -101,7 +100,6 @@ def download_dem(
     work_dir = dem_download_config.work_dir
     data_source = dem_download_config.data_source
     dem_dir = work_dir / 'DEM'
-    #slc_dir = Path('./')
     slc_dir = asf_download_config.slc_dir
     
     print(f"[bold green]{'='*60}[/bold green]")
@@ -123,18 +121,18 @@ def download_dem(
     values = [str(v).upper() for v in dem_download_config.__dict__.values()]
     if any("COSMO-SKYMED" in value for value in values):
         slc_dir = Path(str(slc_dir).replace('SLC', 'RAW_data'))
-        print(f"Platform detected: COSMO-SKYMED, using RAW_data directory")
+        print(f"[bold]Platform detected: COSMO-SKYMED, using RAW_data directory[/bold]")
     if any("TSX" in value for value in values):
         slc_dir = Path(str(slc_dir).replace('SLC', 'SLC_ORIG'))
-        print(f"Platform detected: TerraSAR-X, using SLC_ORIG directory")
+        print(f"[bold]Platform detected: TerraSAR-X, using SLC_ORIG directory[/bold]")
     
     # Find KML file
     print('[bold magenta]\nSearching for KML file...\n[/bold magenta]')
     try:
-        kml_files = sorted(slc_dir.glob('*.kml'))
+        kml_files = sorted(slc_dir.glob('ssara_*.kml'))
         if not kml_files:
             raise FileNotFoundError(
-                f'[bold red]No *.kml found in {slc_dir}\n'
+                f'[bold red]No ssara_*.kml found in {slc_dir}\n'
                 'Please run the download command first to generate the KML file.[/bold red]'
             )
         ssara_kml_file = kml_files[-1]
@@ -162,10 +160,14 @@ def download_dem(
     east = bbox[3].split('\'')[0]
 
     # Expand bbox with buffer
-    south = math.floor(float(south) - 0.5)
+    """ south = math.floor(float(south) - 0.5)
     north = math.ceil(float(north) + 0.5)
     west = math.floor(float(west) - 0.5)
-    east = math.ceil(float(east) + 0.5)
+    east = math.ceil(float(east) + 0.5) """
+    south = math.floor(float(south))
+    north = math.ceil(float(north))
+    west = math.floor(float(west))
+    east = math.ceil(float(east))
     
     # Format bbox for sardem (Left, Bottom, Right, Top)
     bbox_LeftBottomRightTop = [int(west), int(south), int(east), int(north)]

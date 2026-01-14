@@ -91,7 +91,7 @@ def main(iargs=None):
     lat_min2, lat_max2, lon_min2, lon_max2 = process_kml(kml_file=kml_file, delta_lat=delta_lat, delta_lon=delta_lon)
 
     lat_lon_str = f'SNWE: {lat_min2} {lat_max2} {lon_min2} {lon_max2}'
-    print(lat_lon_str)
+    
     return lat_lon_str
 
 if __name__ == '__main__':
