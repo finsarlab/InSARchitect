@@ -3,22 +3,22 @@ from pathlib import Path
 from typing_extensions import Annotated
 
 from ..config import load_config
-from ..core.download.download import download_main
+from ..core.jobfiles.download_orbits import download_orbits
 
 app = typer.Typer()
 
 ConfigFile = Annotated[Path, typer.Argument(help="Path to configuration TOML file")]
 
 @app.command()
-def download(config_file: ConfigFile):
+def jobfiles(config_file: ConfigFile):
     """Download SLC images and a KML file based on config"""
 
-    download_config = load_config(config_file)
-    if not download_config:
+    config = load_config(config_file)
+    if not config:
         print("No download config was specified on template file")
         typer.Exit(1)
 
-    download_main(download_config)
+    download_orbits(config)
 
 
 if __name__ == "__main__":

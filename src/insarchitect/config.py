@@ -51,6 +51,7 @@ def load_config(config_path: Path) -> ProjectConfig:
 
         system_config = load_system_config()
         data["system"] = system_config
+        data["project_name"] = config_path.stem
 
         return ProjectConfig(**data)
 
@@ -70,8 +71,8 @@ def load_config(config_path: Path) -> ProjectConfig:
                 print(f"Error in {section}: {field} -> {error['msg']}")
         sys.exit(1)
 
-
-def get_config_section(config_path: Path, section: str):
-    """Load specific section from config."""
-    config = load_config(config_path)
-    return getattr(config, section)
+#
+# def get_config_section(config_path: Path, section: str):
+#     """Load specific section from config."""
+#     config = load_config(config_path)
+#     return getattr(config, section)

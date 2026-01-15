@@ -11,9 +11,13 @@ class SystemConfig(BaseModel):
     max_parallel_jobs: int = Field(4, description="Max number of jobs at the same time")
     slurm_partition: str = Field(..., description="Name of the slurm partition to use")
 
+class Platforms(str, Enum):
+    SENTINEL = "SENTINEL-1"
+    SKY = "SKYSAR"
+
 # ========= Download ========= #
 class DownloadConfig(BaseModel):
-    platform: str = Field(..., description="Satellite platform (e.g SENTINEL-1)")
+    platform: Platforms = Field(Platforms.SENTINEL, description="Which platform to download data from (e.g SENTINEL-1)")
     relative_orbit: int = Field(..., description="Relative orbit number")
     start_date: int = Field(..., description="Start date with YYYYMMDD format")
     end_date: int = Field(..., description="End date with YYYYMMDD format")
@@ -29,7 +33,6 @@ class DataSource(str, Enum):
     NASA = "NASA"
 
 class DemConfig(BaseModel):
-    data_source: DataSource = DataSource.COP
     data_source: DataSource = Field(DataSource.COP, description="Which data_source to download Dem from [COP, NASA]")
     dem_dir: Path = Field(Path("./DEM"), description="Directory to save downloaded DEM")
 
@@ -43,4 +46,5 @@ class ProjectConfig(BaseModel):
     dem: Optional[DemConfig] = Field(None, description="DEM configuration section")
     jobfiles: Optional[JobfilesConfig] = Field(None, description="Jobfiles configuration section")
     system: SystemConfig = Field(..., description="System configuration")
+    project_name: str = Field(..., description="Name of the project (Same as template)")
 
