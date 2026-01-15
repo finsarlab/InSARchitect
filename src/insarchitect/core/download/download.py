@@ -39,7 +39,7 @@ def download_main(config: ProjectConfig):
     print("[bold green]ASF DOWNLOAD[/bold green]")
     print(f"[bold green]{'='*60}[/bold green]")
     print(f"[bold]Working directory[/bold]:  {work_dir}")
-    print(f"[bold]Platform[/bold]:           {download_config.platform}")
+    print(f"[bold]Platform[/bold]:           {download_config.platform.value}")
     print(f"[bold]Product Type[/bold]:       {product_type}")
     print(f"[bold]Relative orbit[/bold]:     {download_config.relative_orbit}")
     print(f"[bold]Bounding Box[/bold]:       {download_config.bounding_box}")
@@ -52,11 +52,11 @@ def download_main(config: ProjectConfig):
     end = datetime.datetime.strptime(str(download_config.end_date), "%Y%m%d")
 
     opts = {
-        'platform': download_config.platform,
+        'platform': download_config.platform.value,
         'maxResults': download_config.max_results,
         'start': start,
         'end': end,
-        'processingLevel': "SLC",
+        'processingLevel': product_type,
         "intersectsWith": download_config.bounding_box
     }
 
@@ -64,12 +64,13 @@ def download_main(config: ProjectConfig):
     try:
         results = asf.geo_search(**opts)
         results.raise_if_incomplete()
+        print(results[0])
     except asf.exceptions.ASFSearchError as e:
         print(f"[bold red]ERROR: ASF search incomplete: {e}[/bold red]")
         sys.exit(1)
 
     # Get total bytes for loading bar
-    total_bytes = reduce(lambda x, y: x + y.properties["bytes"], results, 0)
+    total_bytes = reduce(lambda x, y: x + int(y.properties["bytes"]), results, 0)
     total_gigabytes = round(total_bytes / (1024**3), 2)
     print(f"[bold cyan]\nFound {len(results)} products for a total of {total_gigabytes}GB[/bold cyan]")
 
@@ -94,7 +95,10 @@ def download_main(config: ProjectConfig):
             )
 
             while not future.done():
-                downloaded_bytes = sum(file.stat().st_size for file in slc_dir.glob("*.zip"))
+                if burst_flag:
+                    downloaded_bytes = sum(file.stat().st_size for file in slc_dir.glob("*.tiff"))
+                else:
+                    downloaded_bytes = sum(file.stat().st_size for file in slc_dir.glob("*.zip"))
                 progress.update(task, completed=downloaded_bytes)
                 time.sleep(1)
 
@@ -154,7 +158,7 @@ def remove_incomplete_downloads(slc_dir: Path, results):
         filepath = slc_dir / filename
 
         if filepath.exists():
-            expected_size = product.properties.get('bytes')
+            expected_size = int(product.properties.get('bytes'))
             actual_size = filepath.stat().st_size
 
             if actual_size < expected_size:

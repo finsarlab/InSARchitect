@@ -1,6 +1,6 @@
 DEFAULT_CONFIG = """# Default generated config
 [download]
-platform                = "SENTINEL-1"
+# platform              =
 # relative_orbit        =
 # start_date            =
 # end_date              =
