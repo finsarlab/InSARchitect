@@ -1,121 +1,76 @@
 import tomllib
 import sys
-from dataclasses import dataclass
 from pathlib import Path
+import platformdirs
+
+from pydantic import ValidationError
 from rich import print
 
-from .utils import parse_date
+from .models import ProjectConfig, SystemConfig
 
-@dataclass
-class DownloadSLCConfig:
-    """Configuration for SLC download."""
-    platform: str
-    relative_orbit: int
-    start_date: str
-    end_date: str
-    max_results: int
-    bounding_box: str
-    parallel_downloads: int
-    burst_download: bool
-    slc_dir: str | Path
+DEFAULT_SYSTEM_CONFIG_PATH = Path(platformdirs.user_config_dir("insarchitect")) / "config.toml"
 
-    def __post_init__(self):
-            self.slc_dir = Path(self.slc_dir)
-            self.start_date = parse_date.parse_date_from_int(self.start_date)
-            self.end_date = parse_date.parse_date_from_int(self.end_date)
+def load_system_config() -> SystemConfig:
+    """Loads global system configuration"""
+    config_path = DEFAULT_SYSTEM_CONFIG_PATH
 
-@dataclass
-class DownloadDEMConfig:
-    """Configuration for DEM download and processing."""
-    work_dir: str | Path
-    data_source: str
-    
-    def __post_init__(self):
-        self.work_dir = Path(self.work_dir)
-        self.data_source = str(self.data_source)
-        
-        # Validate data source
-        valid_sources = ["COP", "NASA"]
-        if self.data_source.upper() not in valid_sources:
-            print(f"Warning: data_source '{self.data_source}' not in {valid_sources}. Using 'COP'")
-            self.data_source = "COP"
-        else:
-            self.data_source = self.data_source.upper()
+    if config_path.exists():
+        data = tomllib.load(DEFAULT_SYSTEM_CONFIG_PATH.open("rb"))
+        return SystemConfig(**data)
+    else:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        scratch_dir = Path().home() / "scratch"
+        work_dir = Path().home() / "workdir"
+        orbits_dir = work_dir / Path("S1orbits")
 
-@dataclass
-class SLCConfig:
-    download: DownloadSLCConfig
+        scratch_dir.mkdir(exist_ok=True)
+        work_dir.mkdir(exist_ok=True)
+        orbits_dir.mkdir(exist_ok=True)
 
-@dataclass
-class DEMConfig:
-    dem: DownloadDEMConfig
+        template = f"""# InSARchitect System Configuration
+# This file contains machine-specific settings
 
-def load_config(path: Path) -> SLCConfig:
-    """Load config file
-    
-    Parameters
-    ----------
-    path: Path
-        Path to config file
+scratch_dir = "{scratch_dir}"
+work_dir = "{work_dir}"
+orbits_dir = "{orbits_dir}"
 
-    Returns
-    -------
-    SLCConfig
-        A SLCConfig object containing parameters for SLC downloads
+max_parallel_jobs = 4
+slurm_partition = "all"
     """
+        config_path.write_text(template)
+
+        data = tomllib.load(DEFAULT_SYSTEM_CONFIG_PATH.open("rb"))
+        return SystemConfig(**data)
+
+def load_config(config_path: Path) -> ProjectConfig:
+    """Loads and validate TOML config file"""
     try:
-        with path.open("rb") as f:
+        with open(config_path, "rb") as f:
             data = tomllib.load(f)
-        download_config = DownloadSLCConfig(**data['download'])
-    except FileNotFoundError as e:
-        print(f"Error: {e}")
-        sys.exit(1)
-    except TypeError as e:
-        print(f"Argument not supported: {e}")
-        sys.exit(1)
 
-    config = SLCConfig(
-        download_config
-    )
+        system_config = load_system_config()
+        data["system"] = system_config
+        data["project_name"] = config_path.stem
 
-    return config
+        return ProjectConfig(**data)
 
-
-def load_dem_config(path: Path) -> DEMConfig:
-    """Load dem parameters
-    
-    Parameters
-    ----------
-    path: Path
-        Path to config file
-
-    Returns
-    -------
-    DEMConfig
-        A DEMConfig object containing parameters for DEM downloads
-    """
-    try:
-        with path.open("rb") as f:
-            data = tomllib.load(f)
-        
-        if 'dem' not in data:
-            print('[bold yellow]Template file does not have dem key definition. Using default values.[/bold yellow]')
-            dem_config = DownloadDEMConfig(
-                work_dir="./", 
-                data_source="COP"
-            )
-        else:
-            dem_config = DownloadDEMConfig(**data['dem'])
-            
-    except FileNotFoundError as e:
-        print(f"[bold red]Error finding config file: {e}[/bold red]")
-        sys.exit(1)
-    except TypeError as e:
-        print(f"[bold red]Error managing the argument: {e}[/bold red]")
+    except FileNotFoundError:
+        print(f"Configuration file not found: {config_path}")
         sys.exit(1)
 
-    config = DEMConfig(
-        dem_config
-    )
+    except ValidationError as e:
+        print(f"Invalid configuration in {config_path}")
+        for error in e.errors():
+            section = str(error['loc'][0])
+            field = error['loc'][1]
 
-    return config
+            if error['type'] == 'missing':
+                print(f"Missing field in {section}: {field}",)
+            else:
+                print(f"Error in {section}: {field} -> {error['msg']}")
+        sys.exit(1)
+
+# def get_config_section(config_path: Path, section: str):
+#     """Load specific section from config."""
+#     config = load_config(config_path)
+#     return getattr(config, section)

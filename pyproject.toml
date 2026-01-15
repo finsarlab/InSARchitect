@@ -7,7 +7,7 @@ name = "insarchitect"
 version = "0.0.0"
 
 [project.scripts]
-insarchitect = "insarchitect.cli.main:app"
+insarchitect = "insarchitect.cli:app"
 
 
 [tool.setuptools]

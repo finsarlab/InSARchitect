@@ -135,6 +135,6 @@ def test_gdal_integrity():
 
 def test_cli_app():
     """Test CLI app structure."""
-    from insarchitect.cli.main import app
+    from insarchitect.cli import app
     assert hasattr(app, 'registered_commands')
 

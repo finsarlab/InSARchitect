@@ -6,8 +6,8 @@ from unittest.mock import Mock, patch, MagicMock, call
 import tempfile
 import shutil
 
-from insarchitect.cli.commands.download import download
-from insarchitect.cli.commands.download_dem import (
+from insarchitect.commands.download import download
+from insarchitect.commands.dem import (
     download_dem,
     format_bbox,
     exist_valid_dem_dir
@@ -143,9 +143,9 @@ parallel_downloads = 4
         if temp_path.exists():
             temp_path.unlink()
 
-    @patch('insarchitect.cli.commands.download.load_config')
-    @patch('insarchitect.cli.commands.download.asf')
-    @patch('insarchitect.cli.commands.download.simplekml')
+    @patch('insarchitect.commands.download.load_config')
+    @patch('insarchitect.commands.download.asf')
+    @patch('insarchitect.commands.download.simplekml')
     @patch('shapely.geometry.shape')
     def test_successful_slc_download(self, mock_shape, mock_kml, mock_asf, mock_load_config, mock_config):
         """Test successful SLC download."""
@@ -181,9 +181,9 @@ parallel_downloads = 4
             assert mock_asf.geo_search.called
             assert mock_results.download.called
 
-    @patch('insarchitect.cli.commands.download.load_config')
+    @patch('insarchitect.commands.download.load_config')
     @patch('insarchitect.cli.commands.download.asf')
-    @patch('insarchitect.cli.commands.download.simplekml')
+    @patch('insarchitect.commands.download.simplekml')
     def test_burst_download_mode(self, mock_kml, mock_asf, mock_load_config, mock_config):
         """Test burst download mode is correctly set."""
         mock_config.download.burst_download = True
@@ -211,8 +211,8 @@ parallel_downloads = 4
             call_args = mock_asf.geo_search.call_args
             assert call_args[1]['processingLevel'] == mock_asf.PRODUCT_TYPE.BURST
 
-    @patch('insarchitect.cli.commands.download.load_config')
-    @patch('insarchitect.cli.commands.download.asf')
+    @patch('insarchitect.commands.download.load_config')
+    @patch('insarchitect.commands.download.asf')
     def test_asf_search_error(self, mock_asf, mock_load_config, mock_config):
         """Test handling of ASF search errors."""
         from asf_search.exceptions import ASFSearchError
@@ -237,10 +237,10 @@ parallel_downloads = 4
                     download(config_file)
                 assert exc_info.value.exit_code == 1
 
-    @patch('insarchitect.cli.commands.download.load_config')
-    @patch('insarchitect.cli.commands.download.asf')
-    @patch('insarchitect.cli.commands.download.os._exit')
-    @patch('insarchitect.cli.commands.download.simplekml')
+    @patch('insarchitect.commands.download.load_config')
+    @patch('insarchitect.commands.download.asf')
+    @patch('insarchitect.commands.download.os._exit')
+    @patch('insarchitect.commands.download.simplekml')
     @patch('shapely.geometry.shape')
     def test_authentication_error(self, mock_shape, mock_kml, mock_exit, mock_asf, mock_load_config, mock_config):
         """Test handling of authentication errors."""
@@ -295,8 +295,8 @@ class TestDownloadDemCommand:
 
         return config
 
-    @patch('insarchitect.cli.commands.download_dem.load_config')
-    @patch('insarchitect.cli.commands.download_dem.exist_valid_dem_dir')
+    @patch('insarchitect.commands.download_dem.load_config')
+    @patch('insarchitect.commands.download_dem.exist_valid_dem_dir')
     def test_existing_valid_dem(self, mock_exist, mock_load_config, mock_config):
         """Test early exit when valid DEM already exists."""
         import typer
@@ -314,13 +314,13 @@ class TestDownloadDemCommand:
 
             assert mock_exist.called
 
-    @patch('insarchitect.cli.commands.download_dem.load_config')
-    @patch('insarchitect.cli.commands.download_dem.exist_valid_dem_dir')
-    @patch('insarchitect.cli.commands.download_dem.get_boundingbox_from_kml')
-    @patch('insarchitect.cli.commands.download_dem.sardem')
-    @patch('insarchitect.cli.commands.download_dem.os.chdir')
-    @patch('insarchitect.cli.commands.download_dem.Path.cwd')
-    @patch('insarchitect.cli.commands.download_dem.Path.glob')
+    @patch('insarchitect.commands.download_dem.load_config')
+    @patch('insarchitect.commands.download_dem.exist_valid_dem_dir')
+    @patch('insarchitect.commands.download_dem.get_boundingbox_from_kml')
+    @patch('insarchitect.commands.download_dem.sardem')
+    @patch('insarchitect.commands.download_dem.os.chdir')
+    @patch('insarchitect.commands.download_dem.Path.cwd')
+    @patch('insarchitect.commands.download_dem.Path.glob')
     def test_successful_dem_download(
         self, mock_glob, mock_cwd, mock_chdir, mock_sardem, mock_bbox, mock_exist, mock_load_config, mock_config
     ):
@@ -361,8 +361,8 @@ class TestDownloadDemCommand:
             assert call_kwargs['data_source'] == "NASA"
             assert call_kwargs['make_isce_xml'] is True
 
-    @patch('insarchitect.cli.commands.download_dem.load_config')
-    @patch('insarchitect.cli.commands.download_dem.exist_valid_dem_dir')
+    @patch('insarchitect.commands.download_dem.load_config')
+    @patch('insarchitect.commands.download_dem.exist_valid_dem_dir')
     def test_missing_kml_file(self, mock_exist, mock_load_config, mock_config):
         """Test error handling when KML file is missing."""
         import typer
@@ -385,13 +385,13 @@ class TestDownloadDemCommand:
                     download_dem(config_file)
                 assert exc_info.value.exit_code == 1
 
-    @patch('insarchitect.cli.commands.download_dem.load_config')
-    @patch('insarchitect.cli.commands.download_dem.exist_valid_dem_dir')
-    @patch('insarchitect.cli.commands.download_dem.get_boundingbox_from_kml')
-    @patch('insarchitect.cli.commands.download_dem.sardem')
-    @patch('insarchitect.cli.commands.download_dem.os.chdir')
-    @patch('insarchitect.cli.commands.download_dem.Path.cwd')
-    @patch('insarchitect.cli.commands.download_dem.Path.glob')
+    @patch('insarchitect.commands.download_dem.load_config')
+    @patch('insarchitect.commands.download_dem.exist_valid_dem_dir')
+    @patch('insarchitect.commands.download_dem.get_boundingbox_from_kml')
+    @patch('insarchitect.commands.download_dem.sardem')
+    @patch('insarchitect.commands.download_dem.os.chdir')
+    @patch('insarchitect.commands.download_dem.Path.cwd')
+    @patch('insarchitect.commands.download_dem.Path.glob')
     def test_copernicus_data_source(
         self, mock_glob, mock_cwd, mock_chdir, mock_sardem, mock_bbox, mock_exist, mock_load_config, mock_config
     ):
@@ -428,12 +428,12 @@ class TestDownloadDemCommand:
             call_kwargs = mock_sardem.dem.main.call_args[1]
             assert call_kwargs['data_source'] == "COPERNICUS"
 
-    @patch('insarchitect.cli.commands.download_dem.load_config')
-    @patch('insarchitect.cli.commands.download_dem.exist_valid_dem_dir')
-    @patch('insarchitect.cli.commands.download_dem.get_boundingbox_from_kml')
-    @patch('insarchitect.cli.commands.download_dem.sardem')
-    @patch('insarchitect.cli.commands.download_dem.os.chdir')
-    @patch('insarchitect.cli.commands.download_dem.Path.cwd')
+    @patch('insarchitect.commands.download_dem.load_config')
+    @patch('insarchitect.commands.download_dem.exist_valid_dem_dir')
+    @patch('insarchitect.commands.download_dem.get_boundingbox_from_kml')
+    @patch('insarchitect.commands.download_dem.sardem')
+    @patch('insarchitect.commands.download_dem.os.chdir')
+    @patch('insarchitect.commands.download_dem.Path.cwd')
     def test_keyboard_interrupt(
         self, mock_cwd, mock_chdir, mock_sardem, mock_bbox, mock_exist, mock_load_config, mock_config
     ):
@@ -464,9 +464,9 @@ class TestDownloadDemCommand:
                     download_dem(config_file)
                 assert exc_info.value.exit_code == 1
 
-    @patch('insarchitect.cli.commands.download_dem.load_config')
-    @patch('insarchitect.cli.commands.download_dem.exist_valid_dem_dir')
-    @patch('insarchitect.cli.commands.download_dem.get_boundingbox_from_kml')
+    @patch('insarchitect.commands.download_dem.load_config')
+    @patch('insarchitect.commands.download_dem.exist_valid_dem_dir')
+    @patch('insarchitect.commands.download_dem.get_boundingbox_from_kml')
     def test_bbox_extraction_error(self, mock_bbox, mock_exist, mock_load_config, mock_config):
         """Test error handling when bbox extraction fails."""
         import typer

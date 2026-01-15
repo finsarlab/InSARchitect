@@ -32,6 +32,8 @@ pyyaml = "*"
 requests = "*"
 tqdm = "*"
 pytest = "*"
+pydantic = ">=2.0,<3"
+pydantic-settings = ">=2.0,<3"
 
 cmake = "*"
 gfortran_linux-64 = "*"
@@ -52,7 +54,7 @@ install = { cmd = ["python", "-m", "pip", "install", "-e", "."] }
 
 install-extra = { cmd = ["bash", "-c", "bash scripts/install_extra_packages.sh"], depends-on = ["install"] }
 
-run = { cmd = ["python", "-m", "insarchitect.cli.main"] }
+run = { cmd = ["insarchitect"] }
 
 setup-env = { cmd = ["bash", "-c", "source env.sh || true"] }
 

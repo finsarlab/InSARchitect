@@ -5,7 +5,7 @@ dependencies:
   - python=3.11
   - typer
   - rich
+  - pydantic
   - asf_search
   - sardem
   - isce2
-
