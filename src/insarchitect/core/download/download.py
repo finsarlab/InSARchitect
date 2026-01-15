@@ -74,11 +74,12 @@ def download_main(config: ProjectConfig):
     print(f"[bold cyan]\nFound {len(results)} products for a total of {total_gigabytes}GB[/bold cyan]")
 
     create_kml(slc_dir, results)
+    remove_incomplete_downloads(slc_dir, results)
 
     with Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
-        DownloadColumn(),
+        DownloadColumn(binary_units=True),
         TransferSpeedColumn(),
         TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
     ) as progress:
@@ -92,18 +93,14 @@ def download_main(config: ProjectConfig):
                 )
             )
 
-            last_downloaded = 0
-            last_time = time.time()
-
             while not future.done():
                 downloaded_bytes = sum(file.stat().st_size for file in slc_dir.glob("*.zip"))
                 progress.update(task, completed=downloaded_bytes)
-                last_downloaded = downloaded_bytes
-                last_time = time.time()
-                time.sleep(0.5)
+                time.sleep(1)
 
         try:
             future.result()
+            print(f"[bold green]Finished downloading {total_gigabytes} GB for a total of {len(results)} images[/bold green]")
         except ASFAuthenticationError as e:
             print(f"[bold red]ERROR: Authentication failed[/bold red]")
             print(f"[bold red]{e}[/bold red]")
@@ -123,7 +120,6 @@ Place your credentials in ~/.netrc:
             sys.exit(1)
 
         except:
-            progress.stop()
             print("[bold red]Connection lost during download[/bold red]")
             sys.exit(1)
 
@@ -149,8 +145,19 @@ def create_kml(slc_dir: Path, results):
             print(f"[bold red]Geometry is a {type(geom)}, not a Polygon.[/bold red]")
             sys.exit(1)
     kml.save(slc_dir / f"ssara_search_{datetime.datetime.now().strftime('%Y%m%d')}.kml")
-    print(f"[bold cyan]✓ KML saved:[/bold cyan] ssara_search_1.kml")
+    print(f"[bold cyan]✓ KML saved:[/bold cyan] ssara_search.kml")
 
+def remove_incomplete_downloads(slc_dir: Path, results):
+    print(f"[bold yellow]Checking for incomplete downloads...[/bold yellow]")
+    for product in results:
+        filename = product.properties.get('fileName')
+        filepath = slc_dir / filename
 
+        if filepath.exists():
+            expected_size = product.properties.get('bytes')
+            actual_size = filepath.stat().st_size
 
+            if actual_size < expected_size:
+                print(f"[bold yellow]Removing incomplete file: {filename} ({actual_size/1024**3:.2f}/{expected_size/1024**3:.2f} GB)[/bold yellow]")
+                filepath.unlink()
 
