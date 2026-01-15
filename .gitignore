@@ -18,3 +18,6 @@ temp/
 SLC
 DEM
 
+asf*
+
+activate.sh
