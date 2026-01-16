@@ -11,7 +11,7 @@ slc_dir                 = "./SLC"
 
 [dem]
 work_dir                = "."
-data_source             = "COP"
+data_source             = "NASA"
 
 [jobfiles]
 jobfiles_dir            = "./run_files"

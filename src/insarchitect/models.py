@@ -33,7 +33,7 @@ class DataSource(str, Enum):
     NASA = "NASA"
 
 class DemConfig(BaseModel):
-    data_source: DataSource = Field(DataSource.COP, description="Which data_source to download Dem from [COP, NASA]")
+    data_source: DataSource = Field(DataSource.COP, description="Which DEM provider to use [COP, NASA]")
     dem_dir: Path = Field(Path("./DEM"), description="Directory to save downloaded DEM")
 
 # ========= Jobfiles ========= #
