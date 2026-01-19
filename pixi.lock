@@ -280,6 +280,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rhash-1.4.6-hb9d3cd8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-14.2.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/s1_orbits-0.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/s2n-1.6.2-he8a4886_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/s3transfer-0.16.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sardem-0.12.0-pyhd8ed1ab_0.conda
@@ -4304,6 +4305,18 @@ packages:
   - pkg:pypi/rich?source=compressed-mapping
   size: 200840
   timestamp: 1760026188268
+- conda: https://conda.anaconda.org/conda-forge/noarch/s1_orbits-0.2.0-pyhd8ed1ab_0.conda
+  sha256: 1b841f5f9af185c8a6c16f2cfc688c28fd573cac04c4cdfd8682f244f0131d25
+  md5: ebad48b160dc2e3bdebb134631b4c60f
+  depends:
+  - python >=3.10
+  - requests
+  license: BSD-3-Clause
+  license_family: BSD
+  purls:
+  - pkg:pypi/s1-orbits?source=hash-mapping
+  size: 11133
+  timestamp: 1753211879191
 - conda: https://conda.anaconda.org/conda-forge/linux-64/s2n-1.6.2-he8a4886_1.conda
   sha256: dec76e9faa3173579d34d226dbc91892417a80784911daf8e3f0eb9bad19d7a6
   md5: bade189a194e66b93c03021bd36c337b
