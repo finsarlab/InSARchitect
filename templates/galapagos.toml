@@ -10,8 +10,8 @@ burst_download          = false
 slc_dir                 = "./SLC"
 
 [dem]
-work_dir                = "."
-data_source             = "NASA"
+data_source             = "COP"
+dem_dir                 = "./DEM"
 
 [jobfiles]
 jobfiles_dir            = "./run_files"
