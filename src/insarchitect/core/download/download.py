@@ -64,7 +64,6 @@ def download_main(config: ProjectConfig):
     try:
         results = asf.geo_search(**opts)
         results.raise_if_incomplete()
-        print(results[0])
     except asf.exceptions.ASFSearchError as e:
         print(f"[bold red]ERROR: ASF search incomplete: {e}[/bold red]")
         sys.exit(1)
