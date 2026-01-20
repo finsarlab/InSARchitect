@@ -1,9 +1,12 @@
 import typer
+import sys
+from asyncio import run
 from pathlib import Path
 from typing_extensions import Annotated
 
 from ..config import load_config
 from ..core.jobfiles.download_orbits import download_orbits
+from ..models import Platforms
 
 app = typer.Typer()
 
@@ -15,10 +18,15 @@ def jobfiles(config_file: ConfigFile):
 
     config = load_config(config_file)
     if not config:
-        print("No download config was specified on template file")
-        typer.Exit(1)
+        print("No config was specified on template file")
+        sys.exit(1)
 
-    download_orbits(config)
+    if not config.download:
+        print("No download config was specified on template file")
+        sys.exit(1)
+
+    if config.download.platform == Platforms.SENTINEL:
+        run(download_orbits(config))
 
 
 if __name__ == "__main__":
