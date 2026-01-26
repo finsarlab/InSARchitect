@@ -62,3 +62,5 @@ setup-env = { cmd = ["bash", "-c", "source env.sh || true"] }
 
 test = { cmd = ["pytest", "test/", "-v"] }
 
+[activation]
+scripts = ["env.sh"]
