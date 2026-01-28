@@ -63,7 +63,6 @@ class UnwrapMethod(str, Enum):
 class IsceConfig(BaseModel):
     # Options
     slc_dir: Path = Field(..., description="Directory with all SLCs")
-    orbit_dir: Path = Field(..., description="Directory with all orbits")
     polarization: Polarization = Field(Polarization.VV, description="SAR data polarization (default: vv)")
     workflow: Workflow = Field(Workflow.INTERFEROGRAM, description="The InSAR processing workflow (default: interferogram)")
     # AOI

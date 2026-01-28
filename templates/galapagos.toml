@@ -13,6 +13,11 @@ slc_dir                 = "./SLC"
 data_source             = "COP"
 dem_dir                 = "./DEM"
 
-[jobfiles]
-jobfiles_dir            = "./run_files"
-
+[isce]
+slc_dir = "./SLC"
+dem = "./DEM"
+#bbox = [-99.20, 19.25, -99.10, 19.35]
+start_date = "2016-08-30"
+stop_date = "2016-09-15"
+num_proc = 12
+num_proc4topo = 12
