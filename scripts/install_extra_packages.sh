@@ -46,16 +46,18 @@ echo -e "${GREEN}Installing packages with pip...${NC}"
 # MintPy
 if [ -d "${TOOLS_DIR}/MintPy" ]; then
     echo -e "${GREEN}Installing MintPy...${NC}"
-    pip install -e "${TOOLS_DIR}/MintPy" || {
-        echo -e "${RED}Error: MintPy installation had issues{NC}"
+    python -m pip install -e "${TOOLS_DIR}/MintPy" || {
+        echo -e "${RED}Error: MintPy installation had issues${NC}"
+        exit 1
     }
 fi
 
 # MiaplPy
 if [ -d "${TOOLS_DIR}/MiaplPy" ]; then
     echo -e "${GREEN}Installing MiaplPy...${NC}"
-    pip install -e "${TOOLS_DIR}/MiaplPy" || {
-        echo -e "${RED}Error: MiaplPy installation had issues{NC}"
+    python -m pip install -e "${TOOLS_DIR}/MiaplPy" || {
+        echo -e "${RED}Error: MiaplPy installation had issues${NC}"
+        exit 1
     }
 fi
 
