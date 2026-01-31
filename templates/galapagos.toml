@@ -12,6 +12,9 @@ slc_dir                 = "./SLC"
 [dem]
 data_source             = "COP"
 dem_dir                 = "./DEM"
+delta_latitude          = 0.0
+delta_longitude         = 0.0
+make_isce_xml           = true
 
 [jobfiles]
 jobfiles_dir            = "./run_files"

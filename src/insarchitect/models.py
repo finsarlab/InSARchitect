@@ -35,6 +35,9 @@ class DataSource(str, Enum):
 class DemConfig(BaseModel):
     data_source: DataSource = Field(DataSource.COP, description="Which DEM provider to use [COP, NASA]")
     dem_dir: Path = Field(Path("./DEM"), description="Directory to save downloaded DEM")
+    delta_latitude: float = Field(0.0, description="Delta latitude to subtract/add from min/max latitude")
+    delta_longitude: float = Field(0.0, description="Delta longitude to subtract/add from min/max longitude")
+    make_isce_xml: bool = Field(True, description="")
 
 # ========= Jobfiles ========= #
 class JobfilesConfig(BaseModel):
