@@ -15,6 +15,12 @@ dem_dir                 = "./DEM"
 delta_latitude          = 0.0
 delta_longitude         = 0.0
 make_isce_xml           = true
+x_rate                  = 1
+y_rate                  = 1
+keep_egm                = false
+shift_rsc               = false
+output_format           = "GTiff"
+output_type             = "float32"
 
 [jobfiles]
 jobfiles_dir            = "./run_files"

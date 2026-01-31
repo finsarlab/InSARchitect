@@ -39,9 +39,17 @@ def dem_main(config: ProjectConfig):
     data_source = download_dem_config.data_source.value
     dem_dir = work_dir / download_dem_config.dem_dir
     slc_dir = work_dir / download_asf_config.slc_dir
+
+    # Parameters for sardem command
     delta_lat = download_dem_config.delta_latitude
     delta_lon = download_dem_config.delta_longitude
     make_isce_xml = download_dem_config.make_isce_xml
+    xrate = download_dem_config.x_rate
+    yrate = download_dem_config.y_rate
+    keep_egm = download_dem_config.keep_egm
+    shift_rsc = download_dem_config.shift_rsc
+    output_format = download_dem_config.output_format
+    output_type = download_dem_config.output_type
     
     print(f"[bold green]{'='*60}[/bold green]")
     print("[bold green]DEM DOWNLOAD[/bold green]")
@@ -109,29 +117,47 @@ def dem_main(config: ProjectConfig):
     bbox_LeftBottomRightTop = [int(west), int(south), int(east), int(north)]
     print(f"[bold]Bounding box[/bold]: {bbox_LeftBottomRightTop}")
 
+    print('[bold magenta]\nDownloading DEM using SARDEM...\n[/bold magenta]')
     output_name = f"elevation_{format_bbox(bbox_LeftBottomRightTop)}.dem"
     data_source_str = "NASA DEM" if data_source == "NASA" else "Copernicus DEM"
-    print('[bold magenta]\nDownloading DEM...\n[/bold magenta]')
-    print(f"[bold]Output file[/bold]: {output_name}")
-    print(f"[bold]Data source[/bold]: {data_source_str}")
-    
-    command = f"sardem --bbox {int(west)} {int(south)} {int(east)} {int(north)} --data {data_source} --output {output_name}"
-    
-    if make_isce_xml:
-        command += " --make-isce-xml"
+    output_format_str = "GTiff" if output_format == "GTiff" else "ENVI"
+    output_type_str = "float32" if output_type == "float32" else "int16"
 
-    print(f"[bold magenta]\nSARDEM execution...\n[/bold magenta]")
-    print(f'[bold]Command[/bold]: {command}')
+    if data_source == "NASA" and output_format_str== "GTiff":
+        print(f"[bold yellow]Data source {data_source_str} only support ENVI format, the format will be changed\n")
+        output_format_str = "ENVI"
+
+    if data_source == "COP" and output_format_str == "ENVI":
+        print(f"[bold yellow]Data source {data_source_str} only support GTiff format, the format will be changed\n")
+        output_format_str = "GTiff"
+
+    print(f"[bold]Output file[/bold]: {output_name}")
+    print(f'[bold]Bounding box[/bold]: {int(west)} {int(south)} {int(east)} {int(north)}')
+    print(f"[bold]Data source[/bold]: {data_source_str}")
+    print(f"[bold]XRate[/bold]: {xrate}")
+    print(f"[bold]YRate[/bold]: {yrate}")
+    print(f"[bold]Make ISCE XML file[/bold]: {make_isce_xml}")
+    print(f"[bold]Keep EGM*[/bold]: {keep_egm}")
+    print(f"[bold]Shift RSC[/bold]: {shift_rsc}")
+    print(f"[bold]Output format[/bold]: {output_format_str}")
+    print(f"[bold]Output type[/bold]: {output_type_str}\n")
+
     # Change to DEM directory
     original_dir = Path.cwd()
     os.chdir(dem_dir)
     
     try:
         sardem.dem.main(
+            output_name=output_name,
             bbox=bbox_LeftBottomRightTop,
             data_source=data_source,
+            xrate=xrate,
+            yrate=yrate,
             make_isce_xml=make_isce_xml,
-            output_name=output_name
+            keep_egm=keep_egm,
+            shift_rsc=shift_rsc,
+            output_format=output_format_str,
+            output_type=output_type_str
         )
         # Verify output files
         dem_files = list(Path('.').glob(f'{output_name}*'))

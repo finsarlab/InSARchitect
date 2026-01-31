@@ -32,12 +32,26 @@ class DataSource(str, Enum):
     COP = "COP"
     NASA = "NASA"
 
+class OutputFormat(str, Enum):
+    ENVI = "ENVI"
+    GTIFF = "GTiff"
+
+class OutputType(str, Enum):
+    INT16 = "int16"
+    FLOAT32 = "float32"
+
 class DemConfig(BaseModel):
     data_source: DataSource = Field(DataSource.COP, description="Which DEM provider to use [COP, NASA]")
     dem_dir: Path = Field(Path("./DEM"), description="Directory to save downloaded DEM")
     delta_latitude: float = Field(0.0, description="Delta latitude to subtract/add from min/max latitude")
     delta_longitude: float = Field(0.0, description="Delta longitude to subtract/add from min/max longitude")
-    make_isce_xml: bool = Field(True, description="")
+    make_isce_xml: bool = Field(True, description="Make an ISCE2 XML file for the DEM")
+    x_rate: int = Field(1, ge=1, le=50, description="Upsampling rate in X direction")
+    y_rate: int = Field(1, ge=1, le=50, description="Upsampling rate in Y direction")
+    keep_egm: bool = Field(False, description="Keep heights relative to EGM geoid instead of converting to WGS84")
+    shift_rsc: bool = Field(False, description="Shift RSC metadata to pixel center instead of pixel edge")
+    output_format: OutputFormat = Field(OutputFormat.GTIFF, description="Output raster format (GTiff for COP data and ENVI for NASA data).")
+    output_type: OutputType = Field(OutputType.FLOAT32, description="Output DEM data type [int16, float32]")
 
 # ========= Jobfiles ========= #
 class JobfilesConfig(BaseModel):
