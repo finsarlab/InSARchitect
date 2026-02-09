@@ -1,16 +1,182 @@
 from pathlib import Path
 import os
 import sys
-
+import numpy as np
+import xml.etree.ElementTree as ET
 import math
 import shutil
 from rich import print
 
 import sardem.dem
-from insarchitect.config import load_config
-import insarchitect.core.dem.get_boundingbox_from_kml as boundingbox_from_kml 
 
 from ...models import ProjectConfig
+
+def dem_main(config: ProjectConfig):
+    """
+    Download DEM based on template file and KML bounding box.
+    
+    This function:
+    1. Reads the configuration from the template file
+    2. Locates the SSARA KML file with bounding box information
+    3. Extracts the bounding box coordinates
+    4. Downloads the DEM using sardem from Copernicus or NASA DEM
+    5. Creates ISCE-compatible XML files
+    """
+    
+    # Get config
+    download_asf_config = config.download
+    if download_asf_config is None:
+        print(f"[bold red]No valid configuration given for download command[/bold red]")
+        sys.exit(1)
+    
+    download_dem_config = config.dem   
+    if download_dem_config is None:
+        print(f"[bold red]No valid configuration given for dem command[/bold red]")
+        sys.exit(1)
+    
+    # Set directories
+    work_dir = config.system.work_dir / config.project_name
+    data_source = download_dem_config.data_source.value
+    dem_dir = work_dir / download_dem_config.dem_dir
+    slc_dir = work_dir / download_asf_config.slc_dir
+
+    # Parameters for sardem command
+    delta_lat = download_dem_config.delta_latitude
+    delta_lon = download_dem_config.delta_longitude
+    make_isce_xml = download_dem_config.make_isce_xml
+    xrate = download_dem_config.x_rate
+    yrate = download_dem_config.y_rate
+    keep_egm = download_dem_config.keep_egm
+    shift_rsc = download_dem_config.shift_rsc
+    output_format = download_dem_config.output_format
+    output_type = download_dem_config.output_type
+    
+    print(f"[bold green]{'='*60}[/bold green]")
+    print("[bold green]DEM DOWNLOAD[/bold green]")
+    print(f"[bold green]{'='*60}[/bold green]")
+    print(f"[bold]Working directory[/bold]: {work_dir}")
+    print(f"[bold]DEM directory[/bold]:  {dem_dir}")
+    
+    # Check for existing valid DEM    
+    if exist_valid_dem_dir(dem_dir):
+        print("\n[bold cyan]Valid DEM already exists. Exiting.[/bold cyan]")
+        sys.exit(1)
+    
+    # Create DEM directory
+    dem_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Adjust SLC directory based on platform
+    """ values = [str(v).upper() for v in dem_download_config.__dict__.values()]
+    if any("COSMO-SKYMED" in value for value in values):
+        slc_dir = Path(str(slc_dir).replace('SLC', 'RAW_data'))
+        print(f"[bold]Platform detected: COSMO-SKYMED, using RAW_data directory[/bold]")
+    if any("TSX" in value for value in values):
+        slc_dir = Path(str(slc_dir).replace('SLC', 'SLC_ORIG'))
+        print(f"[bold]Platform detected: TerraSAR-X, using SLC_ORIG directory[/bold]") """
+    
+    # Find KML file
+    print('[bold magenta]\nSearching for KML file...\n[/bold magenta]')
+    try:
+        kml_files = sorted(slc_dir.glob('ssara_*.kml'))
+        if not kml_files:
+            raise FileNotFoundError(
+                f'[bold red]No ssara_*.kml found in {slc_dir}\n'
+                'Please run the download command first to generate the KML file.[/bold red]'
+            )
+        ssara_kml_file = kml_files[-1]
+    except Exception as e:
+        print(f'[bold red]Error finding KML file: {e}[/bold red]')
+        sys.exit(1)
+    
+    print(f'[bold]Using KML file[/bold]: {ssara_kml_file.name}')
+    
+    # Get bounding box from KML
+    print('[bold magenta]\nExtracting bounding box from KML...\n[/bold magenta]')
+    print(f"[bold]Delta latitude to subtract/add[/bold]: {delta_lat}")
+    print(f"[bold]Delta longitude to subtract/add[/bold]: {delta_lon}")
+    try:
+        bbox = get_boundingbox_from_kml(
+            kml_file=ssara_kml_file,
+            delta_lat=delta_lat,
+            delta_lon=delta_lon
+        )    
+    except Exception as e:
+        print(f'[bold red]Problem with KML file: {e}[/bold red]')
+        sys.exit(1)
+    
+    # Extract coordinates from bounding box
+    south, north, west, east = bbox
+
+    # Expand bbox with buffer
+    south = math.floor(float(south))
+    north = math.ceil(float(north))
+    west = math.floor(float(west))
+    east = math.ceil(float(east))
+    
+    # Format bbox for sardem (Left, Bottom, Right, Top)
+    bbox_LeftBottomRightTop = [int(west), int(south), int(east), int(north)]
+    print(f"[bold]Bounding box[/bold]: {bbox_LeftBottomRightTop}")
+
+    print('[bold magenta]\nDownloading DEM using SARDEM...\n[/bold magenta]')
+    output_name = f"elevation_{format_bbox(bbox_LeftBottomRightTop)}.dem"
+    data_source_str = "NASA DEM" if data_source == "NASA" else "Copernicus DEM"
+    output_format_str = "GTiff" if output_format == "GTiff" else "ENVI"
+    output_type_str = "float32" if output_type == "float32" else "int16"
+
+    if data_source == "NASA" and output_format_str== "GTiff":
+        print(f"[bold yellow]Data source {data_source_str} only support ENVI format, the format will be changed\n")
+        output_format_str = "ENVI"
+
+    if data_source == "COP" and output_format_str == "ENVI":
+        print(f"[bold yellow]Data source {data_source_str} only support GTiff format, the format will be changed\n")
+        output_format_str = "GTiff"
+
+    print(f"[bold]Output file[/bold]: {output_name}")
+    print(f'[bold]Bounding box[/bold]: {int(west)} {int(south)} {int(east)} {int(north)}')
+    print(f"[bold]Data source[/bold]: {data_source_str}")
+    print(f"[bold]XRate[/bold]: {xrate}")
+    print(f"[bold]YRate[/bold]: {yrate}")
+    print(f"[bold]Make ISCE XML file[/bold]: {make_isce_xml}")
+    print(f"[bold]Keep EGM*[/bold]: {keep_egm}")
+    print(f"[bold]Shift RSC[/bold]: {shift_rsc}")
+    print(f"[bold]Output format[/bold]: {output_format_str}")
+    print(f"[bold]Output type[/bold]: {output_type_str}\n")
+
+    # Change to DEM directory
+    original_dir = Path.cwd()
+    os.chdir(dem_dir)
+    
+    try:
+        sardem.dem.main(
+            output_name=output_name,
+            bbox=bbox_LeftBottomRightTop,
+            data_source=data_source,
+            xrate=xrate,
+            yrate=yrate,
+            make_isce_xml=make_isce_xml,
+            keep_egm=keep_egm,
+            shift_rsc=shift_rsc,
+            output_format=output_format_str,
+            output_type=output_type_str
+        )
+        # Verify output files
+        dem_files = list(Path('.').glob(f'{output_name}*'))
+        if dem_files:
+            print("[bold]\nCreated files[/bold]:")
+            for f in sorted(dem_files):
+                print(f"  - [bold cyan]{f.name}[/bold cyan]")
+        print(f"[bold green]{'='*60}[/bold green]")
+        print('[bold green]DEM DOWNLOAD COMPLETED SUCESSFULLY[/bold green]')
+        print(f"[bold green]{'='*60}[/bold green]")
+        
+    except KeyboardInterrupt:
+        print("[bold red]\nDownload interrupted by user[/bold red]")
+        sys.exit(1)
+    except Exception as e:
+        print(f"[bold red]\nERROR during DEM download: {e}[/bold red]")
+        sys.exit(1)
+    finally:
+        os.chdir(original_dir)
 
 
 def format_bbox(bbox: tuple) -> str:
@@ -60,141 +226,56 @@ def exist_valid_dem_dir(dem_dir: Path) -> bool:
             return False
     else:
         return False
+    
 
-
-def dem_main(config: ProjectConfig):
+def get_boundingbox_from_kml(kml_file: Path, delta_lat: float, delta_lon: float) -> tuple:
     """
-    Download DEM based on template file and KML bounding box.
+    Get the bounding box coordinates from the ssara_*.kml file.
+    Args:
+        kml_file: ssara_*.kml file to extract the bounding box
+        delta_lat: Delta latitude to subtract/add from min/max latitude
+        delta_lon: Delta longitude to subtract/add from min/max longitude
     
-    This function:
-    1. Reads the configuration from the template file
-    2. Locates the SSARA KML file with bounding box information
-    3. Extracts the bounding box coordinates
-    4. Downloads the DEM using sardem from Copernicus or NASA DEM
-    5. Creates ISCE-compatible XML files
+    Returns:
+        Tuple of (lat_min, lat_max, lon_min, lon_max)
     """
     
-    # Get config
-    download_asf_config = config.download
-    if download_asf_config is None:
-        print(f"[bold red]No valid configuration given for download command[/bold red]")
-        sys.exit(1)
-    
-    download_dem_config = config.dem   
-    if download_dem_config is None:
-        print(f"[bold red]No valid configuration given for dem command[/bold red]")
-        sys.exit(1)
-    
-    # Set directories
-    work_dir = config.system.work_dir / config.project_name
-    data_source = download_dem_config.data_source.value
-    dem_dir = work_dir / download_dem_config.dem_dir
-    slc_dir = work_dir / download_asf_config.slc_dir
-    
-    print(f"[bold green]{'='*60}[/bold green]")
-    print("[bold green]DEM DOWNLOAD[/bold green]")
-    print(f"[bold green]{'='*60}[/bold green]")
-    print(f"[bold]Working directory[/bold]: {work_dir}")
-    print(f"[bold]DEM directory[/bold]:  {dem_dir}")
-    
-    # Check for existing valid DEM
-    if exist_valid_dem_dir(dem_dir):
-        print("\n[bold cyan]Valid DEM already exists. Exiting.[/bold cyan]")
-        sys.exit(1)
-    
-    # Create DEM directory
-    dem_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Adjust SLC directory based on platform
-    """ values = [str(v).upper() for v in dem_download_config.__dict__.values()]
-    if any("COSMO-SKYMED" in value for value in values):
-        slc_dir = Path(str(slc_dir).replace('SLC', 'RAW_data'))
-        print(f"[bold]Platform detected: COSMO-SKYMED, using RAW_data directory[/bold]")
-    if any("TSX" in value for value in values):
-        slc_dir = Path(str(slc_dir).replace('SLC', 'SLC_ORIG'))
-        print(f"[bold]Platform detected: TerraSAR-X, using SLC_ORIG directory[/bold]") """
-    
-    # Find KML file
-    print('[bold magenta]\nSearching for KML file...\n[/bold magenta]')
-    try:
-        kml_files = sorted(slc_dir.glob('ssara_*.kml'))
-        if not kml_files:
-            raise FileNotFoundError(
-                f'[bold red]No ssara_*.kml found in {slc_dir}\n'
-                'Please run the download command first to generate the KML file.[/bold red]'
-            )
-        ssara_kml_file = kml_files[-1]
-    except Exception as e:
-        print(f'[bold red]Error finding KML file: {e}[/bold red]')
-        sys.exit(1)
-    
-    print(f'[bold]Using KML file[/bold]: {ssara_kml_file.name}')
-    
-    # Get bounding box from KML
-    print('[bold magenta]\nExtracting bounding box from KML...\n[/bold magenta]')
-    try:
-        bbox = boundingbox_from_kml.main( [str(ssara_kml_file), '--delta_lon', '0'] )    
-    except Exception as e:
-        print(f'[bold red]Problem with KML file: {e}[/bold red]')
-        sys.exit(1)
-    
-    # Parse bbox string
-    bbox = bbox.split('SNWE:')[1]
-    bbox = [val for val in bbox.split()]
+    tree = ET.parse(kml_file)
 
-    south = bbox[0]
-    north = bbox[1]
-    west = bbox[2]
-    east = bbox[3].split('\'')[0]
+    # read lon/lat coordinate into latlon_store matrix
+    lineStrings = tree.findall('.//{http://earth.google.com/kml/2.1}LineString')
+    if not lineStrings:
+        lineStrings = tree.findall('.//{http://www.opengis.net/kml/2.2}LinearRing')
+        latlon_store = np.empty(shape=[0,2], dtype=float)
+        for attributes in lineStrings:
+            for sub in attributes:
+                if sub.tag == '{http://www.opengis.net/kml/2.2}coordinates':
+                    corners = sub.text.split()
+                    for corner in corners[0:-1]:
+                        lon, lat, _ = corner.split(',')
+                        latlon_store = np.append(latlon_store,np.array([[float(lon), float(lat)]]),axis=0)
+    else:
+        latlon_store = np.empty(shape=[0,2],dtype=float)
+        for attributes in lineStrings:
+            for subAttribute in attributes:
+                if subAttribute.tag == '{http://earth.google.com/kml/2.1}coordinates':
+                    corners = subAttribute.text.split(' ')
+                    for corner in corners[0:-1]:
+                        lon, lat, _ = corner.split(',')
+                        latlon_store = np.append(latlon_store,np.array([[float(lon), float(lat)]]),axis=0)
+    
+    # select the max/min lat and lon
+    lat_max = np.max(latlon_store[:,1])
+    lat_min = np.min(latlon_store[:,1])
 
-    # Expand bbox with buffer
-    south = math.floor(float(south))
-    north = math.ceil(float(north))
-    west = math.floor(float(west))
-    east = math.ceil(float(east))
-    
-    # Format bbox for sardem (Left, Bottom, Right, Top)
-    bbox_LeftBottomRightTop = [int(west), int(south), int(east), int(north)]
-    print(f"[bold]Bounding box[/bold]: {bbox_LeftBottomRightTop}")
+    lon_max = np.max(latlon_store[:,0])
+    lon_min = np.min(latlon_store[:,0])
 
-    output_name = f"elevation_{format_bbox(bbox_LeftBottomRightTop)}.dem"
-    data_source_str = "NASA DEM" if data_source == "NASA" else "Copernicus DEM"
-    print('[bold magenta]\nDownloading DEM...\n[/bold magenta]')
-    print(f"[bold]Output file[/bold]: {output_name}")
-    print(f"[bold]Data source[/bold]: {data_source_str}")
-    
-    command = (
-        f"sardem --bbox {int(west)} {int(south)} {int(east)} {int(north)} "
-        f"--data {data_source} --make-isce-xml --output {output_name}"
-    )
-    print(f"[bold magenta]\nSARDEM execution...\n[/bold magenta]")
-    print(f'[bold]Command[/bold]: {command}')
-    # Change to DEM directory
-    original_dir = Path.cwd()
-    os.chdir(dem_dir)
-    
-    try:
-        sardem.dem.main(
-            bbox=bbox_LeftBottomRightTop,
-            data_source=data_source,
-            make_isce_xml=True,
-            output_name=output_name
-        )
-        # Verify output files
-        dem_files = list(Path('.').glob(f'{output_name}*'))
-        if dem_files:
-            print("[bold]\nCreated files[/bold]:")
-            for f in sorted(dem_files):
-                print(f"  - [bold cyan]{f.name}[/bold cyan]")
-        print(f"[bold green]{'='*60}[/bold green]")
-        print('[bold green]DEM DOWNLOAD COMPLETED SUCESSFULLY[/bold green]')
-        print(f"[bold green]{'='*60}[/bold green]")
-        
-    except KeyboardInterrupt:
-        print("[bold red]\nDownload interrupted by user[/bold red]")
-        sys.exit(1)
-    except Exception as e:
-        print(f"[bold red]\nERROR during DEM download: {e}[/bold red]")
-        sys.exit(1)
-    finally:
-        os.chdir(original_dir)
+    # add the delta_lat/delta_lon
+    lat_max2 = np.around((lat_max + delta_lat), 1)
+    lat_min2 = np.around((lat_min - delta_lat), 1)
+
+    lon_max2 = np.around((lon_max + delta_lon), 1)
+    lon_min2 = np.around((lon_min - delta_lon), 1)
+
+    return lat_min2, lat_max2, lon_min2, lon_max2
