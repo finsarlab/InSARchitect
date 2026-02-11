@@ -99,6 +99,14 @@ class IsceConfig(BaseModel):
 
 
 
+# ========= SLURM ========= #
+class SlurmStepConfig(BaseModel):
+    partition: str = Field("all", description="SLURM partition name")
+    walltime: str = Field("04:00:00", description="Wall time limit (HH:MM:SS)")
+    ntasks: int = Field(1, description="Number of tasks per job")
+    memory: str = Field("8G", description="Memory per job (e.g. 8G, 16G)")
+
+
 # ========= Project ========= #
 class ProjectConfig(BaseModel):
     download: Optional[DownloadConfig] = Field(None, description="Download configuration section")

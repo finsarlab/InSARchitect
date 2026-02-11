@@ -44,6 +44,7 @@ isce2 = ">=2.6.4,<3"
 rich = ">=14.2.0,<15"
 boto3 = ">=1.42.28,<2"
 s1_orbits = ">=0.2.0,<0.3"
+platformdirs = ">=4.5.1,<5"
 
 [pypi-dependencies]
 pip = "*"
