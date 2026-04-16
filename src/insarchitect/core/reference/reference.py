@@ -1,1 +1,101 @@
-# Referencing entry point
+from pathlib import Path
+import sys
+import shutil
+from datetime import datetime 
+from rich import print
+from ...models import ReferenceFileType
+
+from mintpy.utils import readfile
+
+from .reference_point import reference_point
+from .reference_date import reference_date
+
+def normalize_inputs(path: Path) -> list[Path]:
+    if path.is_dir():
+        return sorted(path.glob("*.h5"))
+    return [path]
+
+def validation_yyyymmdd_date(attr: dict, ref_date_str: str):
+    valid_ref_dates = {"zero_first", "minRMS"}
+    if ref_date_str not in valid_ref_dates:
+        ref_date = datetime.strptime(ref_date_str, "%Y%m%d")
+        start_date_str = attr["START_DATE"]
+        end_date_str = attr["END_DATE"]
+        start_date = datetime.strptime(start_date_str, "%Y%m%d")
+        end_date = datetime.strptime(end_date_str, "%Y%m%d")
+        
+        if not (start_date <= ref_date <= end_date):
+            print(f"[bold red]Provided reference date is not within {start_date_str} - {end_date_str}[/bold red]")
+            sys.exit(1)
+
+def copy_h5_files(files: list[Path], output_dir: Path) -> list[Path]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    copied_files = []
+    for f in files:
+        copy_path = output_dir / f.name
+        shutil.copy2(f, copy_path)
+        copied_files.append(copy_path)
+    return copied_files
+
+def reference_main(path: Path, file_type: ReferenceFileType, lat: float , lon: float, ref_date: str, output_dir: Path):
+    """
+    Referencing timeseries in space and in time, or velocity
+    is space, using user requirements.
+    """
+    # path to a list of paths for processing
+    files = normalize_inputs(path=path)
+
+    results = [] # to storage attributes of each file
+
+    for f in files:
+        print(f"Extracting attributes from {f}")
+        _, attr = readfile.read(f) # explore attributes of the file
+
+        print("[bold]Attributes:[/bold]")
+        print(attr)
+
+        ref_lat = float(attr["REF_LAT"])
+        ref_lon = float(attr["REF_LON"])
+
+        ref_date_file = attr.get("REF_DATE")
+
+        bbox_str = attr["topsStack.boundingBox"]
+        bbox = list(map(float, bbox_str.split()))
+
+        # reference date validation
+        validation_yyyymmdd_date(attr=attr, ref_date_str=ref_date)
+
+        # latitude and longitude validation
+        if lat is not None and lon is not None:
+            if not (bbox[0] < lat < bbox[1]) or not (bbox[2] < lon < bbox[3]):
+                print(f"[bold red]Provided reference point is not within the bounding box:[/bold red] {bbox}")
+                sys.exit(1)
+
+        print(f"[bold]Reference point (lat, lon):[/bold] {ref_lat, ref_lon}")
+        print(f"[bold]Reference date:[/bold] {ref_date_file}")
+        print(f"[bold]Bounding box (min_lat, max_lat, min_lon, max_lon):[/bold] {bbox}")
+
+        results.append({
+            "og_path": f,
+            "ref_lat": ref_lat,
+            "ref_lon": ref_lon,
+            "ref_date": ref_date_file,
+            "bbox": bbox,
+        })
+
+    copied_files = copy_h5_files(files=files, output_dir=output_dir)
+
+    for i, copied_path in enumerate(copied_files):
+        results[i]["path"] = copied_path
+    
+    # Processing
+    if file_type == ReferenceFileType.velocity:
+        reference_point(results=results, lat=lat, lon=lon)
+    elif file_type == ReferenceFileType.timeseries:
+        if lat is not None and lon is not None:
+            reference_point(results=results, lat=lat, lon=lon)
+        reference_date(results=results, ref_date=ref_date)
+
+    print(f"[bold green]{'='*60}[/bold green]")
+    print("[bold green]REFERENCING COMPLETED[/bold green]")
+    print(f"[bold green]{'='*60}[/bold green]")

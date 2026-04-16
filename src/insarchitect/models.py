@@ -57,6 +57,11 @@ class DemConfig(BaseModel):
 class JobfilesConfig(BaseModel):
     jobfiles_dir: Path = Field(Path("./jobfiles"), description="Directory to save jobfiles")
 
+# ========= Reference ========= #
+class ReferenceFileType(str, Enum):
+    timeseries = "timeseries"
+    velocity = "velocity"
+
 # ========= Project ========= #
 class ProjectConfig(BaseModel):
     download: Optional[DownloadConfig] = Field(None, description="Download configuration section")
