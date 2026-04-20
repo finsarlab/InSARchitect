@@ -45,15 +45,15 @@ def reference_main(path: Path, file_type: ReferenceFileType, lat: float , lon: f
     # path to a list of paths for processing
     files = normalize_inputs(path=path)
 
+    is_timeseries = file_type == ReferenceFileType.timeseries
+
     results = [] # to storage attributes of each file
 
     print("[bold magenta]Validating files...[/bold magenta]")
     for f in files:
-        print(f"Extracting attributes from {f}")
+        print(f"[bold cyan]\nFile attributes from[/bold cyan] {f}")
         _, attr = readfile.read(f) # explore attributes of the file
 
-        #print("[bold]Attributes:[/bold]")
-        #print(attr)
         attr_file_type = attr["FILE_TYPE"]
         if attr_file_type != file_type:
             print(f"[bold red]Invalid file type '{attr_file_type}' for files of type '{file_type.value}'[/bold red]")
@@ -62,6 +62,8 @@ def reference_main(path: Path, file_type: ReferenceFileType, lat: float , lon: f
         # reference point and date from file
         ref_lat = float(attr["REF_LAT"])
         ref_lon = float(attr["REF_LON"])
+        ref_y = int(attr["REF_Y"])
+        ref_x = int(attr["REF_X"])
         ref_date_file = attr.get("REF_DATE")
 
         # bounding box
@@ -83,7 +85,7 @@ def reference_main(path: Path, file_type: ReferenceFileType, lat: float , lon: f
         bbox = [lon_min, lat_min, lon_max, lat_max] # (west, south, east, north)
 
         # reference date validation for timeseries
-        if file_type == ReferenceFileType.timeseries:
+        if is_timeseries:
             validation_yyyymmdd_date(attr=attr, ref_date_str=ref_date)
 
         # latitude and longitude validation
@@ -93,7 +95,9 @@ def reference_main(path: Path, file_type: ReferenceFileType, lat: float , lon: f
                 sys.exit(1)
 
         print(f"[bold]Reference point (lat, lon):[/bold] {ref_lat, ref_lon}")
-        print(f"[bold]Reference date:[/bold] {ref_date_file}")
+        print(f"[bold]Reference point (y, x):[/bold] {ref_y, ref_x}")
+        if is_timeseries:
+            print(f"[bold]Reference date:[/bold] {ref_date_file}")
         print(f"[bold]Bounding box (lon_min, lat_min, lon_max, lat_max):[/bold] {bbox}")
 
         results.append({
@@ -104,17 +108,17 @@ def reference_main(path: Path, file_type: ReferenceFileType, lat: float , lon: f
             "bbox": bbox,
         })
 
-    print("[bold magenta]Creating h5 copies...[/bold magenta]")
+    print("[bold magenta]\nCreating h5 copies...[/bold magenta]")
     copied_files = copy_h5_files(files=files, output_dir=output_dir)
 
     for i, copied_path in enumerate(copied_files):
         results[i]["path"] = copied_path
     
     # Processing
-    print("[bold magenta]Referencing...[/bold magenta]")
+    print("[bold magenta]\nReferencing...[/bold magenta]")
     if file_type == ReferenceFileType.velocity:
         reference_point(results=results, lat=lat, lon=lon, file_type=file_type)
-    elif file_type == ReferenceFileType.timeseries:
+    elif is_timeseries:
         if lat is not None and lon is not None:
             reference_point(results=results, lat=lat, lon=lon, file_type=file_type)
         reference_date(results=results, ref_date=ref_date)
