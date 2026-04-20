@@ -61,7 +61,7 @@ def reference(
         print(f"[bold red]Reference date must be 'zero_first', 'minRMS' or YYYYMMDD format, received: {ref_date}[/bold red]")
         sys.exit(1)
     
-    # output dir path validations
+    # output dir path creation
     if output_dir is None:
         output_dir = path_obj.parent.joinpath("reference")
     
@@ -71,6 +71,7 @@ def reference(
         print(f"[bold]Directory path:[/bold] {path_obj.absolute()}")
     else:
         print(f"[bold]File path:[/bold] {path_obj.absolute()}")
+    print(f"[bold]File type:[/bold] {file_type.value}")
     if lat is not None:
         print(f"[bold]Latitude:[/bold] {lat}")
     if lon is not None:
