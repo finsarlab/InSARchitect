@@ -5,7 +5,8 @@ from rich import print
 
 from ...models import ReferenceFileType
 
-from mintpy.utils import readfile, writefile
+from mintpy.utils import readfile
+from .write_file import write_file
 
 def find_nearest_valid_pixel(data: np.array, y: int, x: int) -> tuple:
     """
@@ -43,7 +44,6 @@ def update_metadata(attr: dict, ref_y: int, ref_x: int, ref_lat: float, ref_lon:
     """
     Update the attributes values
     """
-    print(f"[bold magenta]\nUpdating metadata...[/bold magenta]")
     attr["REF_Y"] = ref_y
     attr["REF_X"] = ref_x
     attr["REF_LAT"] = ref_lat
@@ -116,9 +116,6 @@ def reference_point(results: dict, lat: float, lon: float, file_type: str):
             data = apply_reference(data=data, y=y, x=x)
             attr = update_metadata(attr=attr, ref_y=y, ref_x=x, ref_lat=og_lat, ref_lon=og_lon)
 
-        print(f"[bold green]\nWriting output file:[/bold green] {path}")
-        #writefile.write(data, path, metadata=attr)
-        #output_path = path.replace(".h5", "_ref.h5")
-        #print(f"[bold green]Writing output file:[/bold green] {output_path}")
-        #writefile.write(data, output_path, metadata=attr)
+        dataset_name = "timeseries" if is_timeseries else "velocity"
+        write_file(path=path, data=data, metadata=attr, dataset_name=dataset_name)
         
