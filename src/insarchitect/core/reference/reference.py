@@ -37,7 +37,7 @@ def copy_h5_files(files: list[Path], output_dir: Path) -> list[Path]:
         copied_files.append(copy_path)
     return copied_files
 
-def reference_main(path: Path, file_type: ReferenceFileType, lat: float , lon: float, ref_date: str, output_dir: Path):
+def reference_main(path: Path, file_type: ReferenceFileType, lat: float , lon: float, meters: int, ref_date: str, output_dir: Path):
     """
     Referencing timeseries in space and in time, or velocity
     is space, using user requirements.
@@ -117,7 +117,7 @@ def reference_main(path: Path, file_type: ReferenceFileType, lat: float , lon: f
     # Processing
     print("[bold magenta]\nReferencing...[/bold magenta]")
     if file_type == ReferenceFileType.velocity:
-        reference_point(results=results, lat=lat, lon=lon, file_type=file_type)
+        reference_point(results=results, lat=lat, lon=lon, meters=meters, file_type=file_type)
     elif is_timeseries:
         if lat is not None and lon is not None:
             reference_point(results=results, lat=lat, lon=lon, file_type=file_type)

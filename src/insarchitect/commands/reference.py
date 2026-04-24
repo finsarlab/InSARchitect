@@ -17,6 +17,7 @@ def reference(
     file_type: Annotated[ReferenceFileType, typer.Option(help="File(s) type: 'timeseries' or 'velocity'")],
     lat: Annotated[Optional[float], typer.Option(help="Latitude of reference pixel (optional)")] = None,
     lon: Annotated[Optional[float], typer.Option(help="Longitude of reference pixel (optional)")] = None,
+    meters: Annotated[Optional[int], typer.Option(help="Limit in meters for finding the nearest point")] = 100,
     ref_date: Annotated[str, typer.Option(help="Reference date (optional): 'zero_first', 'minRMS', or date in YYYYMMDD format")] = 'zero_first',
     output_dir: Annotated[Path, typer.Option(help="Path where referenced files will be storage")] = None
 ):
@@ -25,7 +26,7 @@ def reference(
     
     Example:
     - Velocity
-        reference /path/to/velocity/data --file-type velocity --lat -23.6345 --lon -102.5528
+        reference /path/to/velocity/data --file-type velocity --lat -23.6345 --lon -102.5528 --meters 50
     - Timeseries
         reference /path/to/ts/data --file-type timeseries --lat -23.6345 --lon -102.5528 --ref-date minRMS
     """
@@ -84,7 +85,7 @@ def reference(
     print("[bold green]REFERENCING[/bold green]")
     print(f"[bold green]{'='*60}[/bold green]")
     
-    reference_main(path=path_obj, file_type=file_type,lat=lat, lon=lon, ref_date=ref_date, output_dir=output_dir)
+    reference_main(path=path_obj, file_type=file_type,lat=lat, lon=lon, meters=meters, ref_date=ref_date, output_dir=output_dir)
 
 def is_valid_yyyymmdd(date_str: str) -> bool:
     """Date format YYYYMMDD validation."""

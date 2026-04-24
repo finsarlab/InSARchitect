@@ -50,7 +50,7 @@ def update_metadata(attr: dict, ref_y: int, ref_x: int, ref_lat: float, ref_lon:
     attr["REF_LON"] = ref_lon
     return attr
 
-def reference_point(results: dict, lat: float, lon: float, file_type: str):
+def reference_point(results: dict, lat: float, lon: float, meters: int, file_type: str):
     print(f"[bold green]\nApplying reference point...\n[/bold green]")
     for r in results:
         path = r["path"]
@@ -101,6 +101,15 @@ def reference_point(results: dict, lat: float, lon: float, file_type: str):
             nearest_y, nearest_x = find_nearest_valid_pixel(data=layer, y=y, x=x)
             new_lat = y_first + (nearest_y * y_step)
             new_lon = x_first + (nearest_x * x_step)
+
+            # 1° ~ 111.111 km
+            lat_meters = (np.abs(new_lat - og_lat) * 111.111) * 1000
+            lon_meters = (np.abs(new_lon - og_lon) * 111.111) * 1000
+
+            if lat_meters > meters or lon_meters > meters:
+                print(f"[bold red]The nearest point is {lat_meters} meters in latitude and {lon_meters} meters in longitude from selected point[/bold red]")
+                print(f"[bold red]Skipping file...[/bold red]")
+                continue
 
             print(f"[bold cyan]New reference point found at...[/bold cyan]")
             print(f"[bold]Latitude:[/bold] {new_lat} [bold]-> Row:[/bold] {nearest_y}")

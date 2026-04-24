@@ -150,7 +150,7 @@ def reference_date(results: list, ref_date: str):
                 write_file(path=first_file_path, data=data1, metadata=attr1, dataset_name="timeseries")
                 attr2["REF_DATE"] = best_pair["date2"]
                 write_file(path=second_file_path, data=data2, metadata=attr2, dataset_name="timeseries")
-                break
+                return
             else:
                 print("[bold red]Not implemented yet, working on it!!!![bold red]")
                 sys.exit(1)
