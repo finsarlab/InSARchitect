@@ -98,6 +98,12 @@ def reference_main(path: Path, file_type: ReferenceFileType, lat: float , lon: f
         print(f"[bold]Reference point (y, x):[/bold] {ref_y, ref_x}")
         if is_timeseries:
             print(f"[bold]Reference date:[/bold] {ref_date_file}")
+        print(f"[bold]Y first:[/bold] {lat0}")
+        print(f"[bold]X first:[/bold] {lon0}")
+        print(f"[bold]Y step:[/bold] {y_step}")
+        print(f"[bold]X step:[/bold] {x_step}")
+        print(f"[bold]Length:[/bold] {length}")
+        print(f"[bold]Width:[/bold] {width}")
         print(f"[bold]Bounding box (lon_min, lat_min, lon_max, lat_max):[/bold] {bbox}")
 
         results.append({
@@ -120,7 +126,7 @@ def reference_main(path: Path, file_type: ReferenceFileType, lat: float , lon: f
         reference_point(results=results, lat=lat, lon=lon, meters=meters, file_type=file_type)
     elif is_timeseries:
         if lat is not None and lon is not None:
-            reference_point(results=results, lat=lat, lon=lon, file_type=file_type)
+            reference_point(results=results, lat=lat, lon=lon, file_type=file_type, meters=meters)
         reference_date(results=results, ref_date=ref_date)
 
     print(f"[bold green]{'='*60}[/bold green]")

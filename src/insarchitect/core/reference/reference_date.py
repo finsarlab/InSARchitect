@@ -3,7 +3,7 @@ import numpy as np
 import h5py
 from pathlib import Path
 from rich import print
-
+from datetime import datetime
 from mintpy.utils import readfile
 from .write_file import write_file
 
@@ -75,7 +75,6 @@ def reference_date(results: list, ref_date: str):
                 print("[bold cyan]\nComputing RMS per date...[/bold cyan]")
                 for i in range(n_dates):
                     layer = data[i, :, :]
-                    #rms = np.sqrt(np.nanmean(layer ** 2)) # mean of only non-nan values
                     rms = compute_rms(layer=layer)
                     rms_values.append(rms)
 
@@ -94,8 +93,9 @@ def reference_date(results: list, ref_date: str):
                     data = data - layer
 
                     attr["REF_DATE"] = new_ref_date
-
             elif len(results) == 2:
+                from .geo_intersect import geographic_intersection, get_geo_slice
+
                 first_file_path = results[0]["path"]
                 second_file_path = results[1]["path"]
 
@@ -105,19 +105,26 @@ def reference_date(results: list, ref_date: str):
                 first_dates = get_dates_from_file(path=first_file_path)
                 second_dates = get_dates_from_file(path=second_file_path)
 
-                pairs = []
+                # geo intersection
+                intersection = geographic_intersection(attr1, attr2)
+                if intersection is None:
+                    print("[bold red]No spatial overlap between files. Cannot compute minRMS.[/bold red]")
+                    sys.exit(1)
 
+                lat_min, lat_max, lon_min, lon_max = intersection
+                print(f"[bold cyan]Spatial intersection:[/bold cyan] lat [{lat_min:.4f}, {lat_max:.4f}], lon [{lon_min:.4f}, {lon_max:.4f}]")
+
+                row_slice1, col_slice1 = get_geo_slice(attr1, lat_min, lat_max, lon_min, lon_max)
+                row_slice2, col_slice2 = get_geo_slice(attr2, lat_min, lat_max, lon_min, lon_max)
+
+                pairs = []
                 for i, d1 in enumerate(first_dates):
                     for j, d2 in enumerate(second_dates):
-                        diff = abs(d1 - d2)
-                        pairs.append({
-                            "date1": d1,
-                            "idx1": i,
-                            "date2": d2,
-                            "idx2": j,
-                            "diff": diff
-                        })
-                
+                        date1 = datetime.strptime(d1, "%Y%m%d")
+                        date2 = datetime.strptime(d2, "%Y%m%d")
+                        diff = abs(date1 - date2)
+                        pairs.append({"date1": d1, "idx1": i, "date2": d2, "idx2": j, "diff": diff})
+
                 pairs = sorted(pairs, key=lambda x: x["diff"])
                 candidate_pairs = pairs[:5]
 
@@ -125,26 +132,34 @@ def reference_date(results: list, ref_date: str):
                 best_pair = None
 
                 for pair in candidate_pairs:
-                    idx1 = pair["idx1"]
-                    idx2 = pair["idx2"]
+                    # temporal clipping just for rmse
+                    patch1 = data1[pair["idx1"], row_slice1, col_slice1]
+                    patch2 = data2[pair["idx2"], row_slice2, col_slice2]
 
-                    layer1 = data1[idx1, :, :]
-                    layer2 = data2[idx2, :, :]
+                    # both patches could have different shapes, take the minimum
+                    min_rows = min(patch1.shape[0], patch2.shape[0])
+                    min_cols = min(patch1.shape[1], patch2.shape[1])
+                    patch1 = patch1[:min_rows, :min_cols]
+                    patch2 = patch2[:min_rows, :min_cols]
 
-                    diff = layer1 - layer2
-                    rmse = np.sqrt(
-                        np.nanmean(diff ** 2)
-                    )
+                    diff = patch1 - patch2
+                    rmse = np.sqrt(np.nanmean(diff ** 2))
 
                     if rmse < best_rmse:
                         best_rmse = rmse
                         best_pair = pair
 
+                # reference using original data
                 layer1 = data1[best_pair["idx1"], :, :]
                 data1 = data1 - layer1
 
                 layer2 = data2[best_pair["idx2"], :, :]
                 data2 = data2 - layer2
+
+                print(f"[bold green]\nBest reference date pair found (minRMS = {best_rmse:.6f}):[/bold green]")
+                print(f"[bold]  File 1:[/bold] {first_file_path.name} → [bold cyan]{best_pair['date1']}[/bold cyan]")
+                print(f"[bold]  File 2:[/bold] {second_file_path.name} → [bold cyan]{best_pair['date2']}[/bold cyan]")
+                print(f"[bold]  Date difference:[/bold] {best_pair['diff'].days} days")
 
                 attr1["REF_DATE"] = best_pair["date1"]
                 write_file(path=first_file_path, data=data1, metadata=attr1, dataset_name="timeseries")
